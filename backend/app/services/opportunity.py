@@ -90,6 +90,9 @@ class Opportunity:
     risk_penalty_paise: int = 0
     risk_adjusted_paise: int | None = None
     risk_notes: list[str] = field(default_factory=list)
+    # Margin over the next-best comparable option, set by net_exit.rank().
+    # Machine-readable counterpart to the sentence in `reasons`.
+    advantage_over_next_paise: int | None = None
 
     # --- context ------------------------------------------------------------
     district: str | None = None
@@ -163,6 +166,7 @@ class Opportunity:
             "risk_penalty_paise": self.risk_penalty_paise,
             "risk_adjusted_paise": self.risk_adjusted_paise,
             "risk_notes": self.risk_notes,
+            "advantage_over_next_paise": self.advantage_over_next_paise,
             "district": self.district,
             "distance_km": self.distance_km,
             "holding_days": self.holding_days,

@@ -210,6 +210,8 @@ async def net_exit_options(user: CurrentUserDep, product_id: str, holding_days: 
         "ranked_by": result["ranked_by"],
         "method": result["method"],
         "assumptions": result["assumptions"],
+        # Feature 5: the ordering contract travels with the ranking it describes.
+        "neutrality": result.get("neutrality"),
         "availability": "ok" if result["best"] else "insufficient_data",
     }
 
@@ -299,6 +301,8 @@ async def sale_window_options(user: CurrentUserDep, product_id: str,
         "ranked_by": result["ranked_by"],
         "method": result["method"],
         "assumptions": result["assumptions"],
+        # Feature 5: the ordering contract travels with the ranking it describes.
+        "neutrality": result.get("neutrality"),
         "availability": "ok" if result["best"] else "insufficient_data",
     }
 

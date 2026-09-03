@@ -63,10 +63,16 @@ export function date(iso, opts = { day: 'numeric', month: 'short', year: 'numeri
     .format(new Date(iso));
 }
 
+/* Bumped whenever a locale bundle changes, exactly like the ?v= on app.js and
+   routes.js. Without it the bundles are fetched at a URL that never changes, so
+   a browser that has cached en.json keeps showing the old strings forever and
+   any newly added key renders as its raw dotted name. */
+const BUNDLE_VERSION = '3';
+
 async function load(lang) {
   if (dicts[lang]) return;
   try {
-    const res = await fetch(`./i18n/${lang}.json`);
+    const res = await fetch(`./i18n/${lang}.json?v=${BUNDLE_VERSION}`);
     dicts[lang] = res.ok ? await res.json() : {};
   } catch {
     dicts[lang] = {};

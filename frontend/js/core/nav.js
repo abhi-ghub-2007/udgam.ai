@@ -28,6 +28,7 @@ const NAV = {
     { path: '/farmer',           icon: 'home',      key: 'nav.home' },
     { path: '/farmer/listings',  icon: 'listings',  key: 'nav.my_listings' },
     { path: '/farmer/buyers',    icon: 'market',    key: 'nav.matching_buyers' },
+    { path: '/farmer/decisions', icon: 'earnings',  key: 'nav.decide', rail: true },
     { path: '/farmer/orders',    icon: 'orders',    key: 'nav.orders', rail: true },
     { path: '/farmer/transport', icon: 'transport', key: 'nav.transport' },
     { path: '/notifications',    icon: 'requests',  key: 'nav.notifications', rail: true },

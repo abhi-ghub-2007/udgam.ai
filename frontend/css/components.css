@@ -186,3 +186,52 @@
 }
 .toast--error   { background: var(--c-error);   color: var(--c-on-error); }
 .toast--success { background: var(--c-primary); color: var(--c-on-primary); }
+
+/* --- Market Decision Center (SIH26132 §11) -------------------------------
+   Additive only: no existing selector is redefined. Tables scroll inside
+   their own container so the page body never scrolls sideways at 320px
+   (DESIGN.md responsive rule). */
+.table-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+
+.breakdown {
+  width: 100%;
+  min-width: 260px;
+  border-collapse: collapse;
+  font-size: var(--fs-body);
+}
+.breakdown th,
+.breakdown td {
+  padding: var(--sp-xs) var(--sp-sm);
+  border-bottom: 1px solid var(--c-border-card);
+  text-align: left;
+  vertical-align: top;
+}
+.breakdown thead th {
+  font-size: var(--fs-label);
+  text-transform: uppercase;
+  letter-spacing: .04em;
+  color: var(--c-ink-muted);
+  white-space: nowrap;
+}
+.breakdown .num {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.breakdown tr:last-child td { border-bottom: 0; }
+.breakdown__total td {
+  font-weight: var(--fw-bold);
+  border-top: 2px solid var(--c-outline-variant);
+}
+
+.reasons--warn li { color: var(--c-secondary-strong); }
+
+.disclosure > summary {
+  cursor: pointer;
+  padding: var(--sp-xs) 0;
+  font-weight: var(--fw-medium);
+  color: var(--c-primary);
+}
+.disclosure > summary:focus-visible { outline: 2px solid var(--c-primary); outline-offset: 2px; }
+
+.row--wrap { flex-wrap: wrap; }

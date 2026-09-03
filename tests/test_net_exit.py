@@ -417,8 +417,13 @@ def test_every_opportunity_explains_its_arithmetic():
 
 
 def test_winner_states_how_much_better_it_is():
+    """Rupees in the sentence a farmer reads; exact paise in the structured
+    field, so no caller has to parse prose to compute with the margin."""
     r = net_exit.rank([_opp("high", 900), _opp("low", 100)])
-    assert any("800 paise better" in reason for reason in r["best"].reasons)
+    assert r["best"].advantage_over_next_paise == 800
+    assert any("8.00 better than the next feasible option" in reason
+               for reason in r["best"].reasons)
+    assert not any("paise better" in reason for reason in r["best"].reasons)
 
 
 def test_assumptions_are_disclosed_with_the_result():

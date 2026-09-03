@@ -15,6 +15,7 @@ import * as farmerListings from './views/farmer/listings.js';
 import * as farmerListingNew from './views/farmer/listing-new.js';
 import * as farmerListingDetail from './views/farmer/listing-detail.js';
 import * as farmerBuyers from './views/farmer/buyers.js';
+import * as farmerDecisions from './views/farmer/decisions.js';
 import { make as upcoming } from './views/farmer/upcoming.js';
 import * as buyerHome from './views/buyer/home.js';
 import * as buyerMarket from './views/buyer/market.js';
@@ -50,6 +51,7 @@ export function registerRoutes() {
   route('/farmer/listings/new', farmerListingNew, FARMER);
   route('/farmer/listings/:id', farmerListingDetail, FARMER);
   route('/farmer/buyers', farmerBuyers, FARMER);
+  route('/farmer/decisions', farmerDecisions, FARMER);
   route('/farmer/requests', farmerBuyers, FARMER);
   route('/farmer/orders', upcoming('orders'), FARMER);
   route('/farmer/transport', upcoming('transport'), FARMER);

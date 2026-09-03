@@ -455,8 +455,12 @@ def rank(opportunities: list[Opportunity], *, by: str = "net") -> dict:
         nxt = comparable[i + 1] if i + 1 < len(comparable) else None
         if nxt is not None:
             advantage = _value(opp) - _value(nxt)
+            opp.advantage_over_next_paise = advantage
+            # Phrased in rupees because a farmer reads this sentence. The exact
+            # paise figure stays available as advantage_over_next_paise for any
+            # caller that needs to compute with it.
             opp.reasons.append(
-                f"{advantage} paise better than the next feasible option "
+                f"₹{advantage / 100:,.2f} better than the next feasible option "
                 f"({nxt.reference_name})" if advantage
                 else f"ties with {nxt.reference_name} on net realization"
             )

@@ -40,7 +40,8 @@
     "my_routes": "My routes",
     "earnings": "Earnings",
     "profile": "Profile",
-    "notifications": "Notifications"
+    "notifications": "Notifications",
+    "decide": "Decide"
   },
   "auth": {
     "login_title": "Sign in",
@@ -379,6 +380,61 @@
       "self_declared": "Self declared",
       "document_submitted": "Documents submitted",
       "verified": "Verified"
+    }
+  },
+  "decide": {
+    "title": "Market Decision Center",
+    "subtitle": "What should you do with this crop right now? Every figure below shows where it came from.",
+    "choose_lot": "Choose a lot",
+    "no_lots_title": "No active listings",
+    "no_lots_body": "List some produce and this page will tell you the best way to sell it.",
+    "best_exit": "Best exit",
+    "no_exit": "We could not cost a single option for this lot yet.",
+    "expected_net": "Expected net realization",
+    "how_calculated": "How this figure is calculated",
+    "paid_by": "paid by the {who}",
+    "compare_options": "Compare all {n} options",
+    "excluded_options": "{n} option(s) we could not compare",
+    "option": "Option",
+    "distance": "Distance",
+    "ranked_by": "Ranked by",
+    "sell_or_wait": "Sell now or wait?",
+    "no_window": "We have no price forecast for this crop and market yet.",
+    "verdict_sell_now": "Sell now",
+    "verdict_wait": "Waiting looks better",
+    "scenario": "Scenario",
+    "net": "Net",
+    "risk_charge": "Risk charge",
+    "risk_adjusted": "Risk-adjusted",
+    "storage": "Storage",
+    "not_possible": "{n} option(s) not possible",
+    "risk_explainer": "Waiting is scored on risk-adjusted value, never on the forecast price alone. A wider forecast band makes waiting less attractive, not more.",
+    "markets": "Nearby markets",
+    "no_markets": "No market prices on record for this crop yet.",
+    "market": "Market",
+    "price": "Price",
+    "trend": "Trend",
+    "source": "Source",
+    "confidence": "Confidence",
+    "unavailable": "This information is unavailable right now.",
+    "unavailable_hint": "The rest of this page still works.",
+    "freshness": {
+      "LIVE": "Live",
+      "RECENT": "Recent",
+      "STALE": "Stale",
+      "ESTIMATED": "Estimated",
+      "SYNTHETIC": "Simulated"
+    },
+    "channel": {
+      "direct_buyer": "Direct buyer",
+      "mandi": "Mandi",
+      "processor": "Processor",
+      "institutional": "Institutional buyer"
+    },
+    "bearer": {
+      "farmer": "farmer",
+      "buyer": "buyer",
+      "platform": "platform"
     }
   }
 }

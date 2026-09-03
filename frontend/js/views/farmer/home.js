@@ -73,6 +73,9 @@ export async function render() {
           <a class="quick" href="#/farmer/listings/new">
             <span class="quick__icon">${plus}</span>${t('market.list_new')}
           </a>
+          <a class="quick" href="#/farmer/decisions">
+            <span class="quick__icon">${rupee}</span>${t('decide.title')}
+          </a>
           <a class="quick" href="#/farmer/buyers">
             <span class="quick__icon">${search}</span>${t('market.find_buyers')}
           </a>
