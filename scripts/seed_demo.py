@@ -67,22 +67,39 @@ DEMO_USERS = [
 
 
 def _ensure_auth_user(email: str) -> str:
-    """Create the auth user (email pre-confirmed, so no email is ever sent and
-    no email rate limit applies). Returns the user id, reusing an existing one."""
+    """Return the auth user id for `email`, creating it only if absent.
+
+    Idempotent. The profiles row shares its primary key with the auth user and
+    carries the email, so that is the exact, cheap lookup and it is tried first.
+    admin.auth.admin.list_users() is paginated — on a project with a few hundred
+    users the demo account is not on page one, which is why the old
+    create-then-scan-page-one fallback raised "already registered" on a re-run.
+    """
     admin = admin_client()
+
+    row = (admin.table("profiles").select("id").eq("email", email)
+           .limit(1).execute().data)
+    if row:
+        user_id = row[0]["id"]
+        # Keep the shared demo password working even if it was changed.
+        admin.auth.admin.update_user_by_id(user_id, {"password": DEMO_PASSWORD})
+        return user_id
+
     try:
         res = admin.auth.admin.create_user({
             "email": email, "password": DEMO_PASSWORD, "email_confirm": True,
         })
         return res.user.id
-    except Exception:  # noqa: BLE001 - already exists; find and return its id
-        page = admin.auth.admin.list_users()
-        users = page if isinstance(page, list) else getattr(page, "users", [])
-        for u in users:
-            if getattr(u, "email", None) == email:
-                # Reset the password so the known demo password always works.
-                admin.auth.admin.update_user_by_id(u.id, {"password": DEMO_PASSWORD})
-                return u.id
+    except Exception:  # noqa: BLE001 - exists in auth but has no profile row yet
+        for page in range(1, 26):
+            batch = admin.auth.admin.list_users(page=page, per_page=200)
+            users = batch if isinstance(batch, list) else getattr(batch, "users", [])
+            if not users:
+                break
+            for u in users:
+                if getattr(u, "email", None) == email:
+                    admin.auth.admin.update_user_by_id(u.id, {"password": DEMO_PASSWORD})
+                    return u.id
         raise
 
 
@@ -281,14 +298,35 @@ STORAGE_SITES = [
 ]
 
 
-def seed_logistics_and_storage(ids: dict[str, str]) -> tuple[int, int]:
+DEMO_TRANSPORTER_EMAIL = next(
+    u["email"] for u in DEMO_USERS if u["key"] == "transporter"
+)
+
+
+def seed_logistics_and_storage() -> tuple[int, int]:
     """Post transporter capacity and storage listings for the demo transporter.
 
-    Idempotent: clears only this transporter's own rows before rewriting, so no
-    other account's postings are touched.
+    The account is resolved from DEMO_TRANSPORTER_EMAIL — the stable identifier
+    this file already declares — never from list ordering or a caller-supplied
+    id. Seeding against whichever transporter happened to sort first would
+    attach demo inventory to a real account.
+
+    Idempotent: clears only this account's own rows before rewriting, so
+    re-running never duplicates and no other user's postings are touched.
     """
     admin = admin_client()
-    transporter = ids["transporter"]
+    owner = (admin.table("profiles")
+             .select("id, role, email").eq("email", DEMO_TRANSPORTER_EMAIL)
+             .limit(1).execute().data)
+    if not owner:
+        raise RuntimeError(
+            f"{DEMO_TRANSPORTER_EMAIL} has no profile; run seed_demo_users() first."
+        )
+    if owner[0]["role"] != "transporter":
+        raise RuntimeError(
+            f"{DEMO_TRANSPORTER_EMAIL} is not a transporter; refusing to seed."
+        )
+    transporter = owner[0]["id"]
 
     # T-9: storage may only be created by a profile flagged as a provider.
     admin.table("profiles").update({"is_storage_provider": True})         .eq("id", transporter).execute()
@@ -311,11 +349,14 @@ def seed_logistics_and_storage(ids: dict[str, str]) -> tuple[int, int]:
             "total_capacity_kg": cap, "available_capacity_kg": cap,
             "price_paise_per_kg": per_kg, "price_paise_per_km": per_km,
             "discount_pct": discount, "status": "open",
+            # transport_capacity.notes is the only provenance field this table
+            # has; storage_listings has none, so its name carries the label.
+            "notes": "DEMO/SYNTHETIC seed data - not a real posted route",
         })
     admin.table("transport_capacity").insert(cap_rows).execute()
 
     store_rows = [{
-        "owner_id": transporter, "name": name, "district": district,
+        "owner_id": transporter, "name": f"{name} (demo)", "district": district,
         "storage_type": stype, "capacity_kg": cap, "available_capacity_kg": cap,
         "price_paise_per_kg_day": rate, "temperature_c": temp, "status": "active",
     } for (name, district, stype, cap, rate, temp) in STORAGE_SITES]
@@ -334,7 +375,7 @@ def main() -> None:
 
     listings, requests = seed_market(ids)
     print(f"seeded {listings} listings + {requests} buyer requests")
-    caps, stores = seed_logistics_and_storage(ids)
+    caps, stores = seed_logistics_and_storage()
     print(f"seeded {caps} transport capacity rows + {stores} storage listings")
 
     prices, demand = seed_market_prices()
