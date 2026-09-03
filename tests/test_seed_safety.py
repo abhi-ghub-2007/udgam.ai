@@ -158,3 +158,65 @@ def test_capacity_select_was_not_touched_by_the_hardening():
     block = _policy_block("capacity_select")
     assert "for select to authenticated" in block
     assert "status in ('open','partially_booked')" in block
+
+
+# ------------------------------------------------ RLS: aggregations_write policy
+def test_aggregations_write_requires_the_buyer_role():
+    """An aggregation is buyer-owned by construction (buyer_request_id is NOT
+    NULL; a farmer participates via aggregation_items). Ownership alone let a
+    farmer or transporter create one naming themselves as the buyer."""
+    block = _policy_block("aggregations_write")
+    check = block[block.index("with check"):]
+    assert "buyer_id = auth.uid()" in check, "ownership must be enforced"
+    assert "public.profiles p" in check, "role must be verified against profiles"
+    assert "p.role = 'buyer'" in check, "only buyers may create aggregations"
+
+
+def test_aggregations_write_requires_owning_the_buyer_request():
+    """Without this a buyer could aggregate against another buyer's requirement."""
+    check = _policy_block("aggregations_write")
+    assert "public.buyer_requests r" in check
+    assert "r.id = buyer_request_id" in check
+    assert "r.buyer_id = auth.uid()" in check
+
+
+def test_aggregations_write_still_scopes_rows_to_their_owner():
+    block = _policy_block("aggregations_write")
+    using = block[block.index("using"):block.index("with check")]
+    assert "buyer_id = auth.uid()" in using
+
+
+def test_aggregations_write_follows_the_project_authorization_convention():
+    """Same shape as capacity_write and storage_listings_write: ownership in
+    USING, ownership plus the capability gate in WITH CHECK."""
+    block = _policy_block("aggregations_write")
+    assert "for all to authenticated" in block
+    assert "exists (select 1 from public.profiles p" in block
+
+
+def test_aggregations_write_is_not_granted_to_anonymous():
+    block = _policy_block("aggregations_write")
+    assert "to authenticated" in block and " to anon" not in block
+
+
+def test_aggregation_select_policies_were_not_touched():
+    """This pass changed the write policy only."""
+    sel = _policy_block("aggregations_select")
+    assert "buyer_id = auth.uid()" in sel
+    assert "aggregation_items ai" in sel
+    items = _policy_block("agg_items_select")
+    assert "farmer_id = auth.uid()" in items
+
+
+def test_no_farmer_owned_aggregation_exists_in_the_schema():
+    """Pins the design fact the policy rests on: aggregations carry a buyer_id
+    and a NOT NULL buyer_request_id, so 'farmer INSERT denied' is correct rather
+    than an oversight. A farmer's stake is an aggregation_items row."""
+    sql = _schema_sql()
+    ddl = sql[sql.index("create table if not exists public.aggregations"):]
+    ddl = ddl[:ddl.index(");")]
+    assert "buyer_id" in ddl and "buyer_request_id" in ddl
+    assert "farmer_id" not in ddl, "aggregations has no farmer owner column"
+    items = sql[sql.index("create table if not exists public.aggregation_items"):]
+    items = items[:items.index(");")]
+    assert "farmer_id" in items

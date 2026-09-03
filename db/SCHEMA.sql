@@ -964,9 +964,24 @@ create policy aggregations_select on public.aggregations
                where ai.aggregation_id = aggregations.id and ai.farmer_id = auth.uid())
   );
 
+-- An aggregation is buyer-owned by construction: buyer_request_id is NOT NULL,
+-- and a farmer's participation is an aggregation_items row, not an aggregation.
+-- Ownership alone was therefore not enough — the old policy checked only
+-- buyer_id = auth.uid(), so a farmer or transporter could create one naming
+-- themselves as the buyer. Two gates are added, both in WITH CHECK, following
+-- the capacity_write / storage_listings_write shape: the caller must actually
+-- be a buyer, and the requirement being aggregated must be their own.
 drop policy if exists aggregations_write on public.aggregations;
 create policy aggregations_write on public.aggregations
-  for all to authenticated using (buyer_id = auth.uid()) with check (buyer_id = auth.uid());
+  for all to authenticated
+  using (buyer_id = auth.uid())
+  with check (
+    buyer_id = auth.uid()
+    and exists (select 1 from public.profiles p
+                where p.id = auth.uid() and p.role = 'buyer')
+    and exists (select 1 from public.buyer_requests r
+                where r.id = buyer_request_id and r.buyer_id = auth.uid())
+  );
 
 drop policy if exists agg_items_select on public.aggregation_items;
 create policy agg_items_select on public.aggregation_items
