@@ -6,7 +6,7 @@ the project venv:  .venv/Scripts/python.exe scripts/seed_demo.py
 from __future__ import annotations
 
 import sys
-from datetime import timedelta
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
@@ -257,6 +257,73 @@ def seed_market_prices() -> tuple[int, int]:
     return len(price_rows), len(demand_rows)
 
 
+# --- SIH26132 logistics + storage economics ----------------------------------
+# Without posted capacity the Net Exit Optimizer correctly refuses to cost a
+# mandi sale, and without storage the Sale Window cannot price waiting. Both are
+# real rows in the existing tables, posted by the demo transporter, not values
+# invented at request time.
+TRANSPORT_ROUTES = [
+    # (origin, dest, paise/kg, paise/km, capacity_kg, discount_pct, type)
+    ("Nashik", "Mumbai",     180,  900, 12000, 0,  "scheduled_route"),
+    ("Nashik", "Pune",       150,  850, 12000, 0,  "scheduled_route"),
+    ("Nashik", "Nashik",      60,  400,  8000, 0,  "on_demand"),
+    ("Nashik", "Aurangabad", 165,  880, 10000, 15, "empty_leg"),
+    ("Pune",   "Mumbai",     140,  820, 10000, 0,  "scheduled_route"),
+    ("Nashik", "Nagpur",     320, 1100,  9000, 0,  "scheduled_route"),
+]
+
+STORAGE_SITES = [
+    # (name, district, type, capacity_kg, paise/kg/day, temp_c)
+    ("Nashik Cold Chain Unit",   "Nashik", "cold", 50000, 12, 4.0),
+    ("Nashik Dry Godown",        "Nashik", "dry",  80000,  4, None),
+    ("Pune Cold Store",          "Pune",   "cold", 40000, 14, 3.0),
+    ("Aurangabad Dry Warehouse", "Aurangabad", "dry", 60000, 3, None),
+]
+
+
+def seed_logistics_and_storage(ids: dict[str, str]) -> tuple[int, int]:
+    """Post transporter capacity and storage listings for the demo transporter.
+
+    Idempotent: clears only this transporter's own rows before rewriting, so no
+    other account's postings are touched.
+    """
+    admin = admin_client()
+    transporter = ids["transporter"]
+
+    # T-9: storage may only be created by a profile flagged as a provider.
+    admin.table("profiles").update({"is_storage_provider": True})         .eq("id", transporter).execute()
+
+    admin.table("transport_capacity").delete().eq("transporter_id", transporter).execute()
+    admin.table("storage_listings").delete().eq("owner_id", transporter).execute()
+
+    depart = datetime.now(timezone.utc) + timedelta(days=1)
+    cap_rows = []
+    for origin, dest, per_kg, per_km, cap, discount, ctype in TRANSPORT_ROUTES:
+        o = md.MARKET_DISTRICTS.get(origin)
+        d = md.MARKET_DISTRICTS.get(dest)
+        cap_rows.append({
+            "transporter_id": transporter,
+            "capacity_type": ctype,
+            "origin_district": origin, "dest_district": dest,
+            "origin_lat": o[0] if o else None, "origin_lon": o[1] if o else None,
+            "dest_lat": d[0] if d else None, "dest_lon": d[1] if d else None,
+            "depart_at": depart.isoformat(),
+            "total_capacity_kg": cap, "available_capacity_kg": cap,
+            "price_paise_per_kg": per_kg, "price_paise_per_km": per_km,
+            "discount_pct": discount, "status": "open",
+        })
+    admin.table("transport_capacity").insert(cap_rows).execute()
+
+    store_rows = [{
+        "owner_id": transporter, "name": name, "district": district,
+        "storage_type": stype, "capacity_kg": cap, "available_capacity_kg": cap,
+        "price_paise_per_kg_day": rate, "temperature_c": temp, "status": "active",
+    } for (name, district, stype, cap, rate, temp) in STORAGE_SITES]
+    admin.table("storage_listings").insert(store_rows).execute()
+
+    return len(cap_rows), len(store_rows)
+
+
 def main() -> None:
     n = seed_crops()
     total = admin_client().table("crops").select("id").execute()
@@ -267,6 +334,9 @@ def main() -> None:
 
     listings, requests = seed_market(ids)
     print(f"seeded {listings} listings + {requests} buyer requests")
+    caps, stores = seed_logistics_and_storage(ids)
+    print(f"seeded {caps} transport capacity rows + {stores} storage listings")
+
     prices, demand = seed_market_prices()
     print(f"seeded {prices} SYNTHETIC price rows + {demand} demand forecasts")
     print(f"demo login password: {DEMO_PASSWORD}")

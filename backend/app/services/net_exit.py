@@ -419,8 +419,12 @@ def _parse_date(value) -> date | None:
 
 
 # ---------------------------------------------------------------------- ranking
-def rank(opportunities: list[Opportunity]) -> dict:
-    """Order by farmer net realization. Nothing else.
+def rank(opportunities: list[Opportunity], *, by: str = "net") -> dict:
+    """Order by farmer net realization, or by risk-adjusted value.
+
+    `by="risk_adjusted"` is what the Sale Window uses, so waiting is never
+    preferred on a higher headline forecast alone. Both keys are declared in the
+    returned `ranked_by`.
 
     Returns ranked (comparable) and excluded (infeasible or incompletely costed)
     separately, so an option can never win by being cheaper to *estimate* than
@@ -433,9 +437,14 @@ def rank(opportunities: list[Opportunity]) -> dict:
     ]
     excluded = [o for o in opportunities if o not in comparable]
 
+    def _value(o: Opportunity) -> int:
+        if by == "risk_adjusted":
+            return o.risk_adjusted_paise if o.risk_adjusted_paise is not None else 0
+        return o.net_realization_paise or 0
+
     comparable.sort(
         key=lambda o: (
-            -(o.net_realization_paise or 0),
+            -_value(o),
             o.distance_km if o.distance_km is not None else float("inf"),
             str(o.reference_id or ""),
         )
@@ -444,7 +453,7 @@ def rank(opportunities: list[Opportunity]) -> dict:
     for i, opp in enumerate(comparable):
         nxt = comparable[i + 1] if i + 1 < len(comparable) else None
         if nxt is not None:
-            advantage = (opp.net_realization_paise or 0) - (nxt.net_realization_paise or 0)
+            advantage = _value(opp) - _value(nxt)
             opp.reasons.append(
                 f"{advantage} paise better than the next feasible option "
                 f"({nxt.reference_name})" if advantage
@@ -456,7 +465,10 @@ def rank(opportunities: list[Opportunity]) -> dict:
         "best": best,
         "ranked": comparable,
         "excluded": excluded,
-        "ranked_by": "expected_farmer_net_realization_paise desc, then distance_km asc",
+        "ranked_by": (
+            "risk_adjusted_paise desc, then distance_km asc" if by == "risk_adjusted"
+            else "expected_farmer_net_realization_paise desc, then distance_km asc"
+        ),
         "method": "ALGORITHMIC",
         "assumptions": ASSUMPTIONS,
     }

@@ -22,7 +22,7 @@ from fastapi import APIRouter, Depends
 from ..deps import CurrentUserDep, require_role
 from ..errors import Forbidden, NotFound
 from ..services import market_data as md
-from ..services import net_exit
+from ..services import net_exit, sale_window
 from ..services.opportunity import Opportunity
 
 router = APIRouter(prefix="/api/decisions", tags=["decisions"])
@@ -58,6 +58,37 @@ def _payment_reliability(buyer: dict | None) -> tuple[float | None, str]:
         score += 0.5 * min(1.0, float(rating or 0) / 5.0)
         parts.append(f"{rating}/5 over {count} rating(s)")
     return round(min(1.0, score), 3), "; ".join(parts)
+
+
+def _posted_capacity(db, *, dest_district: str | None = None) -> list[dict]:
+    """Open transport capacity, restricted to rows posted by actual transporters.
+
+    The `capacity_write` RLS policy checks only `transporter_id = auth.uid()`
+    with no role test, so any authenticated user can post a capacity row for
+    themselves — including a farmer inventing a cheap route to flatter their own
+    net-exit numbers. The recommendation engine must not trust that, so
+    ownership is re-validated here against `profiles.role`.
+
+    This is a read-side defence, not a substitute for tightening the policy.
+    """
+    rows = (db.table("transport_capacity")
+            .select("transporter_id, available_capacity_kg, price_paise_per_kg,"
+                    " price_paise_per_km, discount_pct, dest_district, status")
+            .eq("status", "open").limit(200).execute()).data or []
+    if dest_district:
+        rows = [r for r in rows
+                if not r.get("dest_district") or r.get("dest_district") == dest_district]
+    if not rows:
+        return []
+
+    owner_ids = list({str(r["transporter_id"]) for r in rows if r.get("transporter_id")})
+    verified = {
+        str(p["id"]) for p in (
+            db.table("profiles").select("id, role")
+            .in_("id", owner_ids).eq("role", "transporter").execute().data or []
+        )
+    }
+    return [r for r in rows if str(r.get("transporter_id")) in verified]
 
 
 @router.get("/net-exit", dependencies=[require_farmer])
@@ -104,10 +135,7 @@ async def net_exit_options(user: CurrentUserDep, product_id: str, holding_days: 
 
     # Posted capacity is fetched once and reused for every channel, so the
     # transport quote is derived identically wherever it appears.
-    capacities = (db.table("transport_capacity")
-                  .select("available_capacity_kg, price_paise_per_kg,"
-                          " price_paise_per_km, discount_pct, dest_district, status")
-                  .eq("status", "open").limit(200).execute()).data or []
+    capacities = _posted_capacity(db)
 
     opportunities: list[Opportunity] = []
 
@@ -167,6 +195,95 @@ async def net_exit_options(user: CurrentUserDep, product_id: str, holding_days: 
         "holding_days": holding_days,
         "best": result["best"].to_dict() if result["best"] else None,
         "ranked": [o.to_dict() for o in result["ranked"]],
+        "excluded": [o.to_dict() for o in result["excluded"]],
+        "ranked_by": result["ranked_by"],
+        "method": result["method"],
+        "assumptions": result["assumptions"],
+        "availability": "ok" if result["best"] else "insufficient_data",
+    }
+
+
+@router.get("/sale-window", dependencies=[require_farmer])
+async def sale_window_options(user: CurrentUserDep, product_id: str,
+                              district: str | None = None):
+    """Sell now, or wait? Scored on risk-adjusted value, not headline forecast.
+
+    Compares selling today against each stored forecast horizon in one market,
+    charging storage from real storage_listings, spoilage from the crop's shelf
+    life, and a risk penalty drawn from the forecast's own confidence band.
+
+    A horizon with no forecast row is skipped, never extrapolated. A wait the
+    lot could not survive is blocked outright.
+    """
+    try:
+        uuid.UUID(str(product_id))
+    except (ValueError, AttributeError, TypeError):
+        raise NotFound("That listing does not exist.")
+
+    db = user.db
+    res = db.table("products").select("*").eq("id", product_id).limit(1).execute()
+    if not res.data:
+        raise NotFound("That listing does not exist.")
+    product = res.data[0]
+    if str(product.get("farmer_id")) != str(user.id):
+        raise Forbidden("That listing belongs to another farmer.")
+
+    crop_res = (db.table("crops")
+                .select("id, code, name_en, category, default_shelf_life_days")
+                .eq("id", product["crop_id"]).limit(1).execute())
+    if not crop_res.data:
+        raise NotFound("That listing's crop is missing.")
+    crop = crop_res.data[0]
+
+    market = district or product.get("district") or (
+        db.table("profiles").select("district").eq("id", user.id)
+        .limit(1).execute().data or [{}]
+    )[0].get("district")
+    if not market:
+        raise NotFound("We need a district to compare market timing.")
+
+    quantity = float(product.get("available_quantity_kg") or product.get("quantity_kg") or 0)
+
+    rows = (db.table("prices")
+            .select("modal_price_paise, confidence_low_paise, confidence_high_paise,"
+                    " price_date, created_at, method, data_source, is_prediction,"
+                    " horizon_days")
+            .eq("crop_id", product["crop_id"]).eq("district", market)
+            .order("price_date", desc=True).limit(120).execute()).data or []
+
+    price_rows: dict[int, dict] = {}
+    provenances: dict[int, dict] = {}
+    for row in rows:
+        horizon = 0 if not row.get("is_prediction") else (row.get("horizon_days") or 0)
+        if horizon in price_rows:
+            continue            # rows are newest-first, so the first wins
+        price_rows[horizon] = row
+        provenances[horizon] = md.provenance(row)
+
+    capacities = _posted_capacity(db, dest_district=market)
+    storage = (db.table("storage_listings")
+               .select("id, name, district, storage_type, available_capacity_kg,"
+                       " price_paise_per_kg_day, status")
+               .eq("status", "active").eq("district", market).limit(50).execute()).data or []
+
+    result = sale_window.evaluate(
+        product=product, crop=crop, district=market, price_rows=price_rows,
+        distance_km=md.district_distance_km(product.get("district"), market),
+        capacities=capacities,
+        storage_listings=storage, provenances=provenances,
+    )
+
+    return {
+        "product": {
+            "id": product["id"], "crop_code": crop.get("code"),
+            "crop_name": crop.get("name_en"), "grade": product.get("grade"),
+            "quantity_kg": quantity,
+            "shelf_life_days": crop.get("default_shelf_life_days"),
+        },
+        "district": market,
+        "recommendation": result["recommendation"],
+        "best": result["best"].to_dict() if result["best"] else None,
+        "scenarios": [o.to_dict() for o in result["ranked"]],
         "excluded": [o.to_dict() for o in result["excluded"]],
         "ranked_by": result["ranked_by"],
         "method": result["method"],

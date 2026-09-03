@@ -84,6 +84,12 @@ class Opportunity:
     commission_paise: int = 0
     expected_loss_paise: int = 0
     net_realization_paise: int | None = None
+    # Risk-Adjusted Sale Window (Phase 3) and Emergency Exit (Phase 5) rank on
+    # risk_adjusted_paise; it is net realization less a penalty derived from the
+    # forecast's own downside band, never a free-floating fudge factor.
+    risk_penalty_paise: int = 0
+    risk_adjusted_paise: int | None = None
+    risk_notes: list[str] = field(default_factory=list)
 
     # --- context ------------------------------------------------------------
     district: str | None = None
@@ -125,10 +131,12 @@ class Opportunity:
         """
         if not self.cost_basis_complete or self.unit_price_paise is None:
             self.net_realization_paise = None
+            self.risk_adjusted_paise = None
             return
         gross = sum(l.amount_paise for l in self.breakdown if l.kind == "gross")
         deductions = sum(l.amount_paise for l in self.breakdown if l.reduces_farmer_net)
         self.net_realization_paise = gross - deductions
+        self.risk_adjusted_paise = self.net_realization_paise - self.risk_penalty_paise
 
     @property
     def farmer_deductions_paise(self) -> int:
@@ -152,6 +160,9 @@ class Opportunity:
             "commission_paise": self.commission_paise,
             "expected_loss_paise": self.expected_loss_paise,
             "net_realization_paise": self.net_realization_paise,
+            "risk_penalty_paise": self.risk_penalty_paise,
+            "risk_adjusted_paise": self.risk_adjusted_paise,
+            "risk_notes": self.risk_notes,
             "district": self.district,
             "distance_km": self.distance_km,
             "holding_days": self.holding_days,
