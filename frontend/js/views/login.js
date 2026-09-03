@@ -126,9 +126,14 @@ export function mount(root) {
       clearErrors();
       
       // app.js's onAuthStateChange will load the profile; go where they were headed.
+      // With no pending redirect, land on the caller's own dashboard rather than
+      // the public marketing page. supabase-js awaits its SIGNED_IN subscribers,
+      // so app.js has already loaded the profile by the time we get here; '/' stays
+      // as the fallback for the rare case where it has not.
       const target = store.get('redirectAfterLogin');
       store.set('redirectAfterLogin', null);
-      navigate(target || '/', { replace: true });
+      const role = store.get('profile')?.role;
+      navigate(target || (role ? `/${role}` : '/'), { replace: true });
       
     } catch (ex) {
       console.error('[login] Sign-in error:', ex);
