@@ -160,6 +160,30 @@ $$;
 -- True when `uid` is the buyer, the sole farmer, a line-item farmer, or the
 -- assigned transporter on the order. The single predicate every
 -- order-adjacent policy reuses.
+-- True when `uid` has a line item in the aggregation. SECURITY DEFINER on
+-- purpose: aggregations_select needs to consult aggregation_items and
+-- agg_items_select needs to consult aggregations, which is a mutual RLS
+-- reference and made Postgres raise 42P17 "infinite recursion detected in
+-- policy" on every select/update/delete of both tables. Routing one direction
+-- through a definer function breaks the cycle, exactly as
+-- is_order_participant does for the order-adjacent policies.
+create or replace function public.is_aggregation_participant(agg_uuid uuid, uid uuid)
+returns boolean language sql stable security definer set search_path = public as $$
+  select exists (
+    select 1 from public.aggregation_items ai
+    where ai.aggregation_id = agg_uuid and ai.farmer_id = uid
+  );
+$$;
+
+-- True when `uid` owns the aggregation (is its buyer). Definer for the same reason.
+create or replace function public.is_aggregation_buyer(agg_uuid uuid, uid uuid)
+returns boolean language sql stable security definer set search_path = public as $$
+  select exists (
+    select 1 from public.aggregations a
+    where a.id = agg_uuid and a.buyer_id = uid
+  );
+$$;
+
 create or replace function public.is_order_participant(order_uuid uuid, uid uuid)
 returns boolean language sql stable security definer set search_path = public as $$
   select exists (
@@ -408,8 +432,19 @@ create table if not exists public.aggregation_items (
   farmer_id      uuid not null references public.profiles(id) on delete cascade,
   quantity_kg    numeric(10,2) not null check (quantity_kg > 0),
   unit_price_paise integer not null,
+  -- Per-farmer consent. aggregations.status describes the group as a whole, so
+  -- it cannot record that farmer A agreed while farmer B has not yet answered.
+  -- Inventory is reserved only once a line reads 'accepted' (PRD B-7).
+  consent_status aggregation_status not null default 'suggested',
+  consent_at     timestamptz,
   unique (aggregation_id, product_id)
 );
+
+-- Additive for databases created before consent tracking existed.
+alter table public.aggregation_items
+  add column if not exists consent_status aggregation_status not null default 'suggested';
+alter table public.aggregation_items
+  add column if not exists consent_at timestamptz;
 
 
 -- ===========================================================================
@@ -960,8 +995,7 @@ create policy aggregations_select on public.aggregations
   for select to authenticated
   using (
     buyer_id = auth.uid()
-    or exists (select 1 from public.aggregation_items ai
-               where ai.aggregation_id = aggregations.id and ai.farmer_id = auth.uid())
+    or public.is_aggregation_participant(id, auth.uid())
   );
 
 -- An aggregation is buyer-owned by construction: buyer_request_id is NOT NULL,
@@ -988,17 +1022,23 @@ create policy agg_items_select on public.aggregation_items
   for select to authenticated
   using (
     farmer_id = auth.uid()
-    or exists (select 1 from public.aggregations a
-               where a.id = aggregation_id and a.buyer_id = auth.uid())
+    or public.is_aggregation_buyer(aggregation_id, auth.uid())
   );
 
 drop policy if exists agg_items_write on public.aggregation_items;
 create policy agg_items_write on public.aggregation_items
   for all to authenticated
-  using (exists (select 1 from public.aggregations a
-                 where a.id = aggregation_id and a.buyer_id = auth.uid()))
-  with check (exists (select 1 from public.aggregations a
-                      where a.id = aggregation_id and a.buyer_id = auth.uid()));
+  using (public.is_aggregation_buyer(aggregation_id, auth.uid()))
+  with check (public.is_aggregation_buyer(aggregation_id, auth.uid()));
+
+-- A farmer answers the invitation on their OWN line only: UPDATE, never INSERT
+-- or DELETE. Consent can be given or withdrawn, but a farmer can never add
+-- themselves to a group or remove anyone else (PRD B-7 consent flow).
+drop policy if exists agg_items_farmer_consent on public.aggregation_items;
+create policy agg_items_farmer_consent on public.aggregation_items
+  for update to authenticated
+  using (farmer_id = auth.uid())
+  with check (farmer_id = auth.uid());
 
 -- --- orders ---------------------------------------------------------------
 -- Participants only: buyer, sole farmer, any line-item farmer, or the

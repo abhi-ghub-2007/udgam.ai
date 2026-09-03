@@ -199,13 +199,51 @@ def test_aggregations_write_is_not_granted_to_anonymous():
     assert "to authenticated" in block and " to anon" not in block
 
 
-def test_aggregation_select_policies_were_not_touched():
-    """This pass changed the write policy only."""
+def test_aggregation_select_policies_do_not_reference_each_other():
+    """The 42P17 regression guard.
+
+    aggregations_select once queried aggregation_items while agg_items_select
+    queried aggregations, which is a mutual RLS reference: Postgres raised
+    "infinite recursion detected in policy" on every select/update/delete of
+    both tables. Each direction must go through a SECURITY DEFINER helper.
+    """
     sel = _policy_block("aggregations_select")
     assert "buyer_id = auth.uid()" in sel
-    assert "aggregation_items ai" in sel
+    assert "is_aggregation_participant" in sel
+    assert "from public.aggregation_items" not in sel, "direct reference re-opens the cycle"
+
     items = _policy_block("agg_items_select")
     assert "farmer_id = auth.uid()" in items
+    assert "is_aggregation_buyer" in items
+    assert "from public.aggregations" not in items, "direct reference re-opens the cycle"
+
+
+def test_aggregation_cycle_breakers_are_security_definer():
+    """A plain function would still evaluate the target table's RLS and recurse."""
+    sql = _schema_sql()
+    for fn in ("is_aggregation_participant", "is_aggregation_buyer"):
+        i = sql.index(f"create or replace function public.{fn}")
+        body = sql[i:sql.index("$$;", i)]
+        assert "security definer" in body, f"{fn} must be SECURITY DEFINER"
+        assert "set search_path = public" in body, f"{fn} must pin search_path"
+
+
+def test_farmer_may_only_update_their_own_aggregation_line():
+    """Consent is an UPDATE on your own row — never INSERT (join a group unasked)
+    and never DELETE (remove someone else)."""
+    block = _policy_block("agg_items_farmer_consent")
+    assert "for update to authenticated" in block, "must be UPDATE-only, not FOR ALL"
+    assert "farmer_id = auth.uid()" in block
+
+
+def test_aggregation_items_carry_per_farmer_consent_state():
+    """aggregations.status is group-level and cannot record that farmer A agreed
+    while farmer B has not answered."""
+    sql = _schema_sql()
+    ddl = sql[sql.index("create table if not exists public.aggregation_items"):]
+    ddl = ddl[:ddl.index(");")]
+    assert "consent_status" in ddl and "consent_at" in ddl
+    assert "add column if not exists consent_status" in sql, "must be additive for existing DBs"
 
 
 def test_no_farmer_owned_aggregation_exists_in_the_schema():
