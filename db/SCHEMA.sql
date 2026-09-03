@@ -1031,10 +1031,20 @@ create policy capacity_select on public.transport_capacity
   for select to authenticated
   using (status in ('open','partially_booked') or transporter_id = auth.uid());
 
+-- Ownership alone is not enough here. The original policy checked only
+-- transporter_id = auth.uid(), so ANY authenticated user could post capacity
+-- for themselves — a farmer could invent a cheap route to flatter their own
+-- net-exit recommendation. Mirrors the storage_listings_write shape below:
+-- ownership in USING, ownership plus the role gate in WITH CHECK.
 drop policy if exists capacity_write on public.transport_capacity;
 create policy capacity_write on public.transport_capacity
   for all to authenticated
-  using (transporter_id = auth.uid()) with check (transporter_id = auth.uid());
+  using (transporter_id = auth.uid())
+  with check (
+    transporter_id = auth.uid()
+    and exists (select 1 from public.profiles p
+                where p.id = auth.uid() and p.role = 'transporter')
+  );
 
 drop policy if exists consolidation_select on public.consolidation_requests;
 create policy consolidation_select on public.consolidation_requests

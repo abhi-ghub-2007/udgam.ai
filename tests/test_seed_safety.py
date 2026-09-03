@@ -104,3 +104,57 @@ def test_auth_user_lookup_is_idempotent_by_construction():
     src = inspect.getsource(sd._ensure_auth_user)
     assert 'table("profiles")' in src, "must look up the existing profile first"
     assert "for page in range" in src, "list_users is paginated; page through it"
+
+
+# --------------------------------------------------- RLS: capacity_write policy
+def _schema_sql() -> str:
+    from pathlib import Path
+    root = Path(__file__).resolve().parents[1]
+    return (root / "db" / "SCHEMA.sql").read_text(encoding="utf-8")
+
+
+def _policy_block(name: str) -> str:
+    sql = _schema_sql()
+    start = sql.index(f"create policy {name} ")
+    return sql[start:sql.index(";", start)]
+
+
+def test_capacity_write_requires_the_transporter_role():
+    """Ownership alone let any authenticated user post capacity for themselves.
+    The WITH CHECK must gate on profiles.role, not just transporter_id."""
+    block = _policy_block("capacity_write")
+    assert "with check" in block
+    check = block[block.index("with check"):]
+    assert "transporter_id = auth.uid()" in check, "ownership must be enforced"
+    assert "public.profiles p" in check, "role must be verified against profiles"
+    assert "p.role = 'transporter'" in check, "only transporters may write capacity"
+
+
+def test_capacity_write_still_scopes_rows_to_their_owner():
+    block = _policy_block("capacity_write")
+    using = block[block.index("using"):block.index("with check")]
+    assert "transporter_id = auth.uid()" in using
+
+
+def test_capacity_write_follows_the_storage_listings_convention():
+    """One authorization pattern, not two: ownership in USING, ownership plus
+    the capability gate in WITH CHECK."""
+    for name, gate in (("capacity_write", "p.role = 'transporter'"),
+                       ("storage_listings_write", "p.is_storage_provider")):
+        block = _policy_block(name)
+        assert "for all to authenticated" in block
+        assert "exists (select 1 from public.profiles p" in block
+        assert gate in block
+
+
+def test_capacity_write_is_not_granted_to_anonymous():
+    assert "to authenticated" in _policy_block("capacity_write")
+    assert " to anon" not in _policy_block("capacity_write")
+
+
+def test_capacity_select_was_not_touched_by_the_hardening():
+    """The marketplace stays readable — F-7 depends on open capacity being public
+    to authenticated users."""
+    block = _policy_block("capacity_select")
+    assert "for select to authenticated" in block
+    assert "status in ('open','partially_booked')" in block
