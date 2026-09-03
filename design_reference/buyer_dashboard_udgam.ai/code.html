@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>UDGAM.ai - Buyer Dashboard</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              "colors": {
+                      "error": "#ba1a1a",
+                      "on-primary": "#ffffff",
+                      "on-tertiary-container": "#b8e2d6",
+                      "surface-container-highest": "#e4e2dd",
+                      "on-surface": "#1b1c19",
+                      "on-surface-variant": "#404943",
+                      "secondary-fixed": "#ffddb4",
+                      "secondary": "#835500",
+                      "outline": "#707973",
+                      "inverse-on-surface": "#f2f1eb",
+                      "surface-container-high": "#e9e8e3",
+                      "on-tertiary-fixed-variant": "#274e45",
+                      "surface-variant": "#e4e2dd",
+                      "error-container": "#ffdad6",
+                      "primary": "#0f5238",
+                      "on-secondary-fixed": "#291800",
+                      "on-secondary": "#ffffff",
+                      "outline-variant": "#bfc9c1",
+                      "primary-fixed-dim": "#95d4b3",
+                      "on-secondary-fixed-variant": "#633f00",
+                      "surface-container-lowest": "#ffffff",
+                      "on-secondary-container": "#734a00",
+                      "surface-tint": "#2c694e",
+                      "on-tertiary": "#ffffff",
+                      "surface-container-low": "#f5f4ee",
+                      "inverse-surface": "#30312d",
+                      "on-background": "#1b1c19",
+                      "tertiary-fixed": "#c1ebdf",
+                      "primary-fixed": "#b1f0ce",
+                      "surface": "#fbf9f4",
+                      "surface-container": "#efeee8",
+                      "tertiary-container": "#3f665d",
+                      "inverse-primary": "#95d4b3",
+                      "on-primary-container": "#a8e7c5",
+                      "background": "#fbf9f4",
+                      "surface-dim": "#dbdad5",
+                      "tertiary-fixed-dim": "#a6cfc3",
+                      "on-error": "#ffffff",
+                      "on-tertiary-fixed": "#00201a",
+                      "secondary-container": "#feb956",
+                      "secondary-fixed-dim": "#feb956",
+                      "on-error-container": "#93000a",
+                      "on-primary-fixed": "#002114",
+                      "tertiary": "#274e45",
+                      "on-primary-fixed-variant": "#0e5138",
+                      "primary-container": "#2d6a4f",
+                      "surface-bright": "#fbf9f4"
+              },
+              "borderRadius": {
+                      "DEFAULT": "0.25rem",
+                      "lg": "0.5rem",
+                      "xl": "0.75rem",
+                      "full": "9999px"
+              },
+              "spacing": {
+                      "gutter": "16px",
+                      "lg": "24px",
+                      "touch-target-large": "52px",
+                      "xs": "4px",
+                      "md": "16px",
+                      "sm": "8px",
+                      "unit": "4px",
+                      "touch-target-min": "48px",
+                      "xl": "32px"
+              },
+              "fontFamily": {
+                      "body-bold": [
+                              "\"-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Noto Sans Devanagari', sans-serif\""
+                      ],
+                      "label-caps": [
+                              "\"-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Noto Sans Devanagari', sans-serif\""
+                      ],
+                      "body-base": [
+                              "\"-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Noto Sans Devanagari', sans-serif\""
+                      ],
+                      "headline-md": [
+                              "\"-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Noto Sans Devanagari', sans-serif\""
+                      ],
+                      "display-lg": [
+                              "\"-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Noto Sans Devanagari', sans-serif\""
+                      ],
+                      "stat-lg": [
+                              "\"-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Noto Sans Devanagari', sans-serif\""
+                      ],
+                      "headline-sm": [
+                              "\"-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Noto Sans Devanagari', sans-serif\""
+                      ]
+              },
+              "fontSize": {
+                      "body-bold": [
+                              "16px",
+                              {
+                                      "lineHeight": "26px",
+                                      "fontWeight": "600"
+                              }
+                      ],
+                      "label-caps": [
+                              "14px",
+                              {
+                                      "lineHeight": "22px",
+                                      "letterSpacing": "0.04em",
+                                      "fontWeight": "700"
+                              }
+                      ],
+                      "body-base": [
+                              "16px",
+                              {
+                                      "lineHeight": "26px",
+                                      "fontWeight": "400"
+                              }
+                      ],
+                      "headline-md": [
+                              "24px",
+                              {
+                                      "lineHeight": "36px",
+                                      "fontWeight": "700"
+                              }
+                      ],
+                      "display-lg": [
+                              "32px",
+                              {
+                                      "lineHeight": "48px",
+                                      "letterSpacing": "-0.02em",
+                                      "fontWeight": "700"
+                              }
+                      ],
+                      "stat-lg": [
+                              "28px",
+                              {
+                                      "lineHeight": "42px",
+                                      "fontWeight": "700"
+                              }
+                      ],
+                      "headline-sm": [
+                              "20px",
+                              {
+                                      "lineHeight": "30px",
+                                      "fontWeight": "600"
+                              }
+                      ]
+              }
+      },
+          },
+        }
+      </script>
+<style>
+        body {
+            background-color: #F9F7F2;
+        }
+        .voice-pulse {
+            animation: pulse-ring 2s cubic-bezier(0.215, 0.61, 0.355, 1) infinite;
+        }
+        @keyframes pulse-ring {
+            0% { transform: scale(0.8); box-shadow: 0 0 0 0 rgba(224, 159, 62, 0.7); }
+            70% { transform: scale(1); box-shadow: 0 0 0 15px rgba(224, 159, 62, 0); }
+            100% { transform: scale(0.8); box-shadow: 0 0 0 0 rgba(224, 159, 62, 0); }
+        }
+    </style>
+</head>
+<body class="bg-surface text-on-surface pb-[80px]">
+<!-- TopAppBar -->
+<header class="flex justify-between items-center w-full px-gutter h-touch-target-large bg-surface border-b-[1.5px] border-outline-variant docked full-width top-0 z-40 sticky">
+<button class="w-[48px] h-[48px] flex items-center justify-center text-primary scale-98 active:opacity-80 transition-transform">
+<span class="material-symbols-outlined" data-icon="language">language</span>
+</button>
+<h1 class="text-headline-md font-headline-md font-black text-primary">UDGAM.ai</h1>
+<button class="w-[48px] h-[48px] flex items-center justify-center text-primary scale-98 active:opacity-80 transition-transform">
+<span class="material-symbols-outlined" data-icon="notifications">notifications</span>
+</button>
+</header>
+<main class="max-w-[1120px] mx-auto w-full flex flex-col px-gutter py-lg space-y-xl">
+<!-- Welcome Header -->
+<section class="flex flex-col space-y-sm">
+<h2 class="text-headline-sm font-headline-sm text-on-surface-variant">Welcome,</h2>
+<p class="text-display-lg font-display-lg text-on-surface">Aditi's Kitchen</p>
+</section>
+<!-- Summary Metrics -->
+<section class="grid grid-cols-2 gap-md">
+<div class="bg-surface-container-lowest border-[1.5px] border-outline-variant rounded-xl p-md flex flex-col justify-center items-center shadow-sm">
+<span class="text-stat-lg font-stat-lg text-primary">3</span>
+<span class="text-body-bold font-body-bold text-on-surface-variant mt-xs">Active Orders</span>
+</div>
+<div class="bg-surface-container-lowest border-[1.5px] border-outline-variant rounded-xl p-md flex flex-col justify-center items-center shadow-sm">
+<span class="text-stat-lg font-stat-lg text-secondary">1</span>
+<span class="text-body-bold font-body-bold text-on-surface-variant mt-xs">Open Request</span>
+</div>
+</section>
+<!-- Your Buy Requests -->
+<section class="flex flex-col space-y-md">
+<h3 class="text-headline-sm font-headline-sm text-on-surface flex items-center">
+<span class="material-symbols-outlined mr-sm text-primary" data-icon="list_alt">list_alt</span>
+                Your Buy Requests
+            </h3>
+<div class="bg-surface-container-lowest border-[1.5px] border-outline-variant rounded-xl p-md flex flex-col space-y-md shadow-sm">
+<div class="flex justify-between items-start">
+<div>
+<h4 class="text-headline-sm font-headline-sm text-on-surface">200kg Potatoes</h4>
+<p class="text-body-base font-body-base text-on-surface-variant mt-unit">Required by: 24 Oct, 2023</p>
+</div>
+<span class="bg-secondary-container text-on-secondary-container px-sm py-unit rounded-full text-label-caps font-label-caps">Open</span>
+</div>
+<div class="flex items-center justify-between border-t-[1.5px] border-outline-variant pt-md">
+<div class="flex items-center text-primary">
+<span class="material-symbols-outlined mr-xs" data-icon="group">group</span>
+<span class="text-body-bold font-body-bold">5 Responses</span>
+</div>
+<button class="bg-surface-container-low border-[1.5px] border-primary text-primary px-md h-touch-target-min rounded-lg text-body-bold font-body-bold flex items-center justify-center scale-98 active:opacity-80 transition-transform">
+                        View Quotes
+                    </button>
+</div>
+</div>
+</section>
+<!-- Recommended for You -->
+<section class="flex flex-col space-y-md">
+<h3 class="text-headline-sm font-headline-sm text-on-surface flex items-center">
+<span class="material-symbols-outlined mr-sm text-primary" data-icon="recommend">recommend</span>
+                Recommended for You
+            </h3>
+<div class="grid grid-cols-1 md:grid-cols-2 gap-md">
+<!-- Listing Card 1 -->
+<div class="bg-surface-container-lowest border-[1.5px] border-outline-variant rounded-xl overflow-hidden shadow-sm flex flex-col">
+<div class="relative w-full h-[200px]">
+<img class="w-full h-full object-cover" data-alt="A close-up, high-quality photo of fresh, vibrant red onions piled high in a woven basket. The lighting is bright and natural, reflecting an outdoor agricultural market setting on a sunny day. The style is hyper-realistic and grounded, emphasizing the robust textures and earthy tones of the vegetables against a clean, light-mode background." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDCMZ8kpeiBLhlvmHTIoSYelAu7S7QqN0VNU14QvlUVuPfbSZU3TovZXEcnMd7RzFeotDL7AOm9iAwoeQ_lOHr6nmRBzlb1iuATz6k74keOwxGwdQHK1xtM8H4hKDPZSA80vuev_lObeCSgjSY78y6fJPqIv4wYwpo2F92dxlhneLxSQJ2hzoshlx2958Zgx04FgzWGbCbd-PcfcDBvmlfPgcrM6Bq52bb3BnTKoJtLTh87etWvA9lV"/>
+<div class="absolute top-sm left-sm bg-surface-container-lowest px-sm py-unit border-[1.5px] border-outline-variant rounded-md flex items-center">
+<span class="text-primary font-bold text-body-bold mr-unit">Grade A</span>
+<span class="material-symbols-outlined text-primary text-[18px]" data-icon="verified">verified</span>
+</div>
+</div>
+<div class="p-md flex flex-col flex-grow">
+<div class="flex justify-between items-start mb-sm">
+<h4 class="text-headline-sm font-headline-sm text-on-surface">Red Onions</h4>
+<span class="text-headline-sm font-headline-sm text-on-surface">₹25<span class="text-body-base text-on-surface-variant">/kg</span></span>
+</div>
+<div class="flex items-center text-on-surface-variant text-body-base font-body-base mb-md">
+<span class="material-symbols-outlined mr-xs text-[18px]" data-icon="location_on">location_on</span>
+                            12km away • Ramesh Farm
+                        </div>
+<div class="mt-auto pt-md flex gap-sm">
+<button class="flex-1 bg-primary text-on-primary h-touch-target-min rounded-lg text-body-bold font-body-bold flex items-center justify-center scale-98 active:opacity-80 transition-transform">
+                                Buy Now
+                            </button>
+<button class="w-[48px] h-[48px] bg-surface-container-high border-[1.5px] border-outline-variant text-on-surface rounded-lg flex items-center justify-center scale-98 active:opacity-80 transition-transform">
+<span class="material-symbols-outlined" data-icon="chat">chat</span>
+</button>
+</div>
+</div>
+</div>
+<!-- Listing Card 2 -->
+<div class="bg-surface-container-lowest border-[1.5px] border-outline-variant rounded-xl overflow-hidden shadow-sm flex flex-col">
+<div class="relative w-full h-[200px]">
+<img class="w-full h-full object-cover" data-alt="A vivid photograph of plump, bright red tomatoes freshly harvested and resting in a wooden crate. The scene is brightly lit with natural sunlight, highlighting the glossy skins and rich red colors of the produce. The aesthetic is clean, professional, and tactile, designed to evoke trust in the quality of the agricultural products in a light-themed interface." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDp3XYoSTksuKxUAiwtmMh0dqSY3Ft5vh8lbnuMTDYG2p8sniWB5hnrG4x6Vw9RBtvf9n_G8EF6NqwqYiY1YTCu0i8n1YVaP36xq_bBGdRacdiAaMQhgHLn9oxH5HH9xowyMir919jkgoOIGk-A3jn2WlZb0NNOZlIjioJoONI8_Ng_5ICqfa1kklratVKrSAnBtWDa8ZNWdWYZXmJSjYdRuXwTqSsKfUBRTzVw0MUeR8MffGCNFcRd"/>
+<div class="absolute top-sm left-sm bg-surface-container-lowest px-sm py-unit border-[1.5px] border-outline-variant rounded-md flex items-center">
+<span class="text-primary font-bold text-body-bold mr-unit">Grade A</span>
+<span class="material-symbols-outlined text-primary text-[18px]" data-icon="verified">verified</span>
+</div>
+</div>
+<div class="p-md flex flex-col flex-grow">
+<div class="flex justify-between items-start mb-sm">
+<h4 class="text-headline-sm font-headline-sm text-on-surface">Desi Tomatoes</h4>
+<span class="text-headline-sm font-headline-sm text-on-surface">₹18<span class="text-body-base text-on-surface-variant">/kg</span></span>
+</div>
+<div class="flex items-center text-on-surface-variant text-body-base font-body-base mb-md">
+<span class="material-symbols-outlined mr-xs text-[18px]" data-icon="location_on">location_on</span>
+                            15km away • Sunil Traders
+                        </div>
+<div class="mt-auto pt-md flex gap-sm">
+<button class="flex-1 bg-primary text-on-primary h-touch-target-min rounded-lg text-body-bold font-body-bold flex items-center justify-center scale-98 active:opacity-80 transition-transform">
+                                Buy Now
+                            </button>
+<button class="w-[48px] h-[48px] bg-surface-container-high border-[1.5px] border-outline-variant text-on-surface rounded-lg flex items-center justify-center scale-98 active:opacity-80 transition-transform">
+<span class="material-symbols-outlined" data-icon="chat">chat</span>
+</button>
+</div>
+</div>
+</div>
+</div>
+</section>
+</main>
+<!-- Floating Mic Button -->
+<button class="fixed bottom-[88px] right-gutter w-[64px] h-[64px] bg-[#E09F3E] text-on-secondary-fixed rounded-full shadow-lg flex items-center justify-center z-50 voice-pulse scale-98 active:opacity-80 transition-transform border-[1.5px] border-outline-variant">
+<span class="material-symbols-outlined text-[32px]" data-icon="mic" data-weight="fill">mic</span>
+</button>
+<!-- BottomNavBar -->
+<nav class="fixed bottom-0 left-0 w-full z-50 flex justify-around items-center h-[64px] bg-surface border-t-[1.5px] border-outline-variant shadow-lg md:hidden">
+<button class="flex flex-col items-center justify-center text-primary border-t-4 border-primary pt-1 w-full h-full scale-95 transition-all duration-150 hover:bg-surface-container-high">
+<span class="material-symbols-outlined" data-icon="dashboard" data-weight="fill">dashboard</span>
+<span class="text-label-caps font-label-caps mt-unit">Home</span>
+</button>
+<button class="flex flex-col items-center justify-center text-on-surface-variant pt-2 w-full h-full scale-95 transition-all duration-150 hover:bg-surface-container-high">
+<span class="material-symbols-outlined" data-icon="pending_actions">pending_actions</span>
+<span class="text-label-caps font-label-caps mt-unit">Work</span>
+</button>
+<button class="flex flex-col items-center justify-center text-on-surface-variant pt-2 w-full h-full scale-95 transition-all duration-150 hover:bg-surface-container-high">
+<span class="material-symbols-outlined" data-icon="shopping_bag">shopping_bag</span>
+<span class="text-label-caps font-label-caps mt-unit">Orders</span>
+</button>
+<button class="flex flex-col items-center justify-center text-on-surface-variant pt-2 w-full h-full scale-95 transition-all duration-150 hover:bg-surface-container-high">
+<span class="material-symbols-outlined" data-icon="headset_mic">headset_mic</span>
+<span class="text-label-caps font-label-caps mt-unit">Support</span>
+</button>
+<button class="flex flex-col items-center justify-center text-on-surface-variant pt-2 w-full h-full scale-95 transition-all duration-150 hover:bg-surface-container-high">
+<span class="material-symbols-outlined" data-icon="mic">mic</span>
+<span class="text-label-caps font-label-caps mt-unit">Voice</span>
+</button>
+</nav>
+</body></html>

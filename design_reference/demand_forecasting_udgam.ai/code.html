@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Demand Forecasting - UDGAM.ai</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=-apple-system,+BlinkMacSystemFont,+'Segoe+UI',+Roboto,+'Noto+Sans+Devanagari',+sans-serif:wght@100..900&display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "error": "#ba1a1a",
+                        "on-primary": "#ffffff",
+                        "on-tertiary-container": "#b8e2d6",
+                        "surface-container-highest": "#e4e2dd",
+                        "on-surface": "#1b1c19",
+                        "on-surface-variant": "#404943",
+                        "secondary-fixed": "#ffddb4",
+                        "secondary": "#835500",
+                        "outline": "#707973",
+                        "inverse-on-surface": "#f2f1eb",
+                        "surface-container-high": "#e9e8e3",
+                        "on-tertiary-fixed-variant": "#274e45",
+                        "surface-variant": "#e4e2dd",
+                        "error-container": "#ffdad6",
+                        "primary": "#0f5238",
+                        "on-secondary-fixed": "#291800",
+                        "on-secondary": "#ffffff",
+                        "outline-variant": "#bfc9c1",
+                        "primary-fixed-dim": "#95d4b3",
+                        "on-secondary-fixed-variant": "#633f00",
+                        "surface-container-lowest": "#ffffff",
+                        "on-secondary-container": "#734a00",
+                        "surface-tint": "#2c694e",
+                        "on-tertiary": "#ffffff",
+                        "surface-container-low": "#f5f4ee",
+                        "inverse-surface": "#30312d",
+                        "on-background": "#1b1c19",
+                        "tertiary-fixed": "#c1ebdf",
+                        "primary-fixed": "#b1f0ce",
+                        "surface": "#fbf9f4",
+                        "surface-container": "#efeee8",
+                        "tertiary-container": "#3f665d",
+                        "inverse-primary": "#95d4b3",
+                        "on-primary-container": "#a8e7c5",
+                        "background": "#fbf9f4",
+                        "surface-dim": "#dbdad5",
+                        "tertiary-fixed-dim": "#a6cfc3",
+                        "on-error": "#ffffff",
+                        "on-tertiary-fixed": "#00201a",
+                        "secondary-container": "#feb956",
+                        "secondary-fixed-dim": "#feb956",
+                        "on-error-container": "#93000a",
+                        "on-primary-fixed": "#002114",
+                        "tertiary": "#274e45",
+                        "on-primary-fixed-variant": "#0e5138",
+                        "primary-container": "#2d6a4f",
+                        "surface-bright": "#fbf9f4"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "gutter": "16px",
+                        "lg": "24px",
+                        "touch-target-large": "52px",
+                        "xs": "4px",
+                        "md": "16px",
+                        "sm": "8px",
+                        "unit": "4px",
+                        "touch-target-min": "48px",
+                        "xl": "32px"
+                    },
+                    "fontFamily": {
+                        "body-bold": ["\"-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Noto Sans Devanagari', sans-serif\""],
+                        "label-caps": ["\"-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Noto Sans Devanagari', sans-serif\""],
+                        "body-base": ["\"-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Noto Sans Devanagari', sans-serif\""],
+                        "headline-md": ["\"-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Noto Sans Devanagari', sans-serif\""],
+                        "display-lg": ["\"-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Noto Sans Devanagari', sans-serif\""],
+                        "stat-lg": ["\"-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Noto Sans Devanagari', sans-serif\""],
+                        "headline-sm": ["\"-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Noto Sans Devanagari', sans-serif\""]
+                    },
+                    "fontSize": {
+                        "body-bold": ["16px", { "lineHeight": "26px", "fontWeight": "600" }],
+                        "label-caps": ["14px", { "lineHeight": "22px", "letterSpacing": "0.04em", "fontWeight": "700" }],
+                        "body-base": ["16px", { "lineHeight": "26px", "fontWeight": "400" }],
+                        "headline-md": ["24px", { "lineHeight": "36px", "fontWeight": "700" }],
+                        "display-lg": ["32px", { "lineHeight": "48px", "letterSpacing": "-0.02em", "fontWeight": "700" }],
+                        "stat-lg": ["28px", { "lineHeight": "42px", "fontWeight": "700" }],
+                        "headline-sm": ["20px", { "lineHeight": "30px", "fontWeight": "600" }]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .material-symbols-outlined.fill {
+            font-variation-settings: 'FILL' 1;
+        }
+        /* Custom bar chart animation */
+        @keyframes growUp {
+            from { height: 0; opacity: 0; }
+            to { opacity: 1; }
+        }
+        .animate-bar {
+            animation: growUp 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+            transform-origin: bottom;
+        }
+    </style>
+</head>
+<body class="bg-background text-on-background min-h-screen pb-[80px]">
+<!-- TopAppBar -->
+<header class="bg-surface dark:bg-surface-dim docked full-width top-0 border-b-[1.5px] border-outline-variant flat no shadows flex justify-between items-center w-full px-gutter h-touch-target-large z-40 sticky">
+<button aria-label="Go back" class="text-primary dark:text-primary-fixed-dim scale-98 active:opacity-80 transition-transform h-12 w-12 flex items-center justify-center hover:bg-surface-container-low transition-colors rounded-full">
+<span class="material-symbols-outlined" data-icon="arrow_back">arrow_back</span>
+</button>
+<div class="text-headline-sm font-headline-sm text-primary dark:text-primary-fixed-dim font-bold text-center flex-1">
+            Demand Forecast
+        </div>
+<div class="h-12 w-12"></div> <!-- Spacer for balance -->
+</header>
+<!-- Main Content Canvas -->
+<main class="px-gutter pt-lg pb-xl max-w-3xl mx-auto flex flex-col gap-lg">
+<!-- Header & Context -->
+<section class="flex flex-col gap-sm">
+<div class="flex items-center gap-sm">
+<span class="material-symbols-outlined text-primary fill" data-icon="local_florist">local_florist</span>
+<h1 class="text-headline-md font-headline-md text-on-surface">Tomato Demand</h1>
+</div>
+<p class="text-body-base font-body-base text-on-surface-variant flex items-center gap-xs">
+<span class="material-symbols-outlined text-[18px]" data-icon="location_on">location_on</span>
+                Nashik Region
+            </p>
+</section>
+<!-- Insights Summary Card (Tactile, High Contrast) -->
+<div class="bg-surface-container-lowest border-[1.5px] border-outline-variant rounded-xl p-md shadow-[0_2px_4px_rgba(0,0,0,0.06)] relative overflow-hidden">
+<!-- decorative accent line -->
+<div class="absolute top-0 left-0 w-full h-[4px] bg-primary"></div>
+<div class="flex items-start gap-md mt-sm">
+<div class="bg-primary-container text-on-primary-container h-12 w-12 rounded-full flex items-center justify-center shrink-0">
+<span class="material-symbols-outlined fill text-[28px]" data-icon="trending_up">trending_up</span>
+</div>
+<div class="flex flex-col gap-sm">
+<p class="text-body-bold font-body-bold text-on-surface">
+                        Tomatoes are expected to be in <span class="text-primary uppercase">HIGH</span> demand in Nashik over the next 3 weeks.
+                    </p>
+<p class="text-label-caps font-label-caps text-secondary flex items-center gap-xs">
+<span class="material-symbols-outlined text-[16px]" data-icon="info">info</span>
+                        Source: Based on market trends.
+                    </p>
+</div>
+</div>
+</div>
+<!-- Chart Section -->
+<section class="bg-surface-container-lowest border-[1.5px] border-outline-variant rounded-xl p-md shadow-[0_2px_4px_rgba(0,0,0,0.06)] flex flex-col gap-lg mt-sm">
+<h2 class="text-body-bold font-body-bold text-on-surface mb-sm">4-Week Projection</h2>
+<!-- Simple Bar Chart Container -->
+<div class="flex items-end justify-around h-48 border-b-2 border-outline-variant pb-xs relative pt-md">
+<!-- Y-axis faint lines (optional visual anchor) -->
+<div class="absolute inset-0 flex flex-col justify-between pointer-events-none z-0">
+<div class="border-t border-surface-variant w-full h-0"></div>
+<div class="border-t border-surface-variant w-full h-0"></div>
+<div class="border-t border-surface-variant w-full h-0"></div>
+</div>
+<!-- Bar: Week 1 (High/Green) -->
+<div class="flex flex-col items-center gap-sm z-10 w-16">
+<div class="w-full bg-primary rounded-t-sm h-[90%] animate-bar" style="height: 90%;"></div>
+<span class="text-label-caps font-label-caps text-on-surface-variant">Wk 1</span>
+</div>
+<!-- Bar: Week 2 (High/Green) -->
+<div class="flex flex-col items-center gap-sm z-10 w-16">
+<div class="w-full bg-primary rounded-t-sm h-[85%] animate-bar" style="animation-delay: 0.1s; height: 85%;"></div>
+<span class="text-label-caps font-label-caps text-on-surface-variant">Wk 2</span>
+</div>
+<!-- Bar: Week 3 (Moderate/Amber) -->
+<div class="flex flex-col items-center gap-sm z-10 w-16">
+<div class="w-full bg-secondary-container rounded-t-sm h-[50%] animate-bar" style="animation-delay: 0.2s; height: 50%;"></div>
+<span class="text-label-caps font-label-caps text-on-surface-variant">Wk 3</span>
+</div>
+<!-- Bar: Week 4 (Low/Red) -->
+<div class="flex flex-col items-center gap-sm z-10 w-16">
+<div class="w-full bg-error rounded-t-sm h-[20%] animate-bar" style="animation-delay: 0.3s; height: 20%;"></div>
+<span class="text-label-caps font-label-caps text-on-surface-variant">Wk 4</span>
+</div>
+</div>
+<!-- Legend -->
+<div class="flex justify-center gap-md pt-sm flex-wrap">
+<div class="flex items-center gap-xs">
+<div class="w-4 h-4 rounded-sm bg-primary"></div>
+<span class="text-label-caps font-label-caps text-on-surface-variant">High</span>
+</div>
+<div class="flex items-center gap-xs">
+<div class="w-4 h-4 rounded-sm bg-secondary-container"></div>
+<span class="text-label-caps font-label-caps text-on-surface-variant">Moderate</span>
+</div>
+<div class="flex items-center gap-xs">
+<div class="w-4 h-4 rounded-sm bg-error"></div>
+<span class="text-label-caps font-label-caps text-on-surface-variant">Low</span>
+</div>
+</div>
+</section>
+<!-- Call to Action -->
+<div class="mt-lg">
+<button class="w-full h-touch-target-large bg-secondary-container hover:bg-secondary-fixed text-on-secondary-container text-body-bold font-body-bold rounded-lg flex items-center justify-center gap-sm shadow-md transition-all scale-98 active:scale-95 border-2 border-transparent focus:border-on-surface">
+<span class="material-symbols-outlined" data-icon="storefront">storefront</span>
+                Sell Now
+            </button>
+</div>
+</main>
+<!-- BottomNavBar (Transaction/Linear screen intent -> Suppressed via guidelines usually, but keeping it if considered part of main dashboard flow. Assuming 'Demand Forecasting' is a sub-page, navigation shell is suppressed as per: "Automatic Suppression: You MUST exclude the navigation shell if the page intent is: ... Any sub-page featuring a 'Close' or 'Back' action". I have added a back button in TopAppBar, so omitting BottomNav). -->
+<!-- Removed BottomNav to prioritize content canvas as this is a specific tool/detail screen -->
+</body></html>

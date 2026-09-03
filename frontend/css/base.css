@@ -1,0 +1,137 @@
+/* ===========================================================================
+   base.css - reset, layout primitives, accessibility scaffolding.
+   Mobile-first: every rule targets 360px; media queries are progressive
+   enhancement only, never the other way round.
+   =========================================================================== */
+
+*, *::before, *::after { box-sizing: border-box; }
+
+/* The hidden attribute must beat any component `display` rule. Without this,
+   .app-header { display: flex } silently defeats <header hidden>. */
+[hidden] { display: none !important; }
+
+html { -webkit-text-size-adjust: 100%; }
+
+body {
+  margin: 0;
+  font-family: var(--font-sans);
+  font-size: var(--fs-body);
+  font-weight: var(--fw-regular);
+  line-height: var(--lh-body);
+  color: var(--c-ink);
+  background: var(--c-bg);
+  /* Room for the fixed bottom nav so the last card is never trapped under it. */
+  padding-bottom: calc(var(--nav-height) + env(safe-area-inset-bottom, 0px));
+  min-height: 100vh;
+}
+
+h1, h2, h3, h4 { margin: 0 0 var(--sp-sm); line-height: var(--lh-heading); font-weight: var(--fw-bold); }
+h1 { font-size: var(--fs-h1); letter-spacing: var(--ls-tight); }
+h2 { font-size: var(--fs-h2); font-weight: var(--fw-semibold); }
+p  { margin: 0 0 var(--sp-md); }
+
+a { color: var(--c-primary-strong); text-decoration-thickness: 2px; text-underline-offset: 3px; }
+
+img, svg, video { max-width: 100%; height: auto; }
+img { border-radius: var(--r-img); }
+
+button, input, select, textarea { font: inherit; color: inherit; }
+
+/* --- Focus: never removed, always unmistakable -------------------------- */
+:focus-visible {
+  outline: var(--bw-focus) solid var(--c-primary);
+  outline-offset: 2px;
+  border-radius: var(--r-sm);
+}
+
+.sr-only {
+  position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
+  overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0;
+}
+
+.skip-link {
+  position: absolute; left: var(--sp-md); top: -100px;
+  z-index: var(--z-toast);
+  background: var(--c-primary); color: var(--c-on-primary);
+  padding: var(--sp-sm) var(--sp-md); border-radius: var(--r-md);
+  font-weight: var(--fw-bold);
+}
+.skip-link:focus { top: var(--sp-md); }
+
+/* --- Layout ------------------------------------------------------------- */
+.app-main {
+  padding: var(--sp-md) var(--gutter) var(--sp-xl);
+  max-width: var(--content-max);
+  margin-inline: auto;
+  outline: none;
+}
+
+.stack       { display: flex; flex-direction: column; gap: var(--sp-md); }
+.stack--sm   { gap: var(--sp-sm); }
+.stack--lg   { gap: var(--sp-lg); }
+.row         { display: flex; align-items: center; gap: var(--sp-sm); flex-wrap: wrap; }
+.row--between{ justify-content: space-between; }
+.grid        { display: grid; gap: var(--sp-md); grid-template-columns: 1fr; }
+
+@media (min-width: 768px) {
+  .grid { grid-template-columns: repeat(2, 1fr); }
+}
+@media (min-width: 1200px) {
+  .grid--3 { grid-template-columns: repeat(3, 1fr); }
+}
+
+/* Wide content scrolls inside its own container; the body never scrolls
+   sideways. */
+.scroll-x { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+
+/* --- App header --------------------------------------------------------- */
+.app-header {
+  position: sticky; top: 0; z-index: var(--z-nav);
+  display: flex; align-items: center; justify-content: space-between;
+  gap: var(--sp-md);
+  min-height: 56px;
+  padding: var(--sp-sm) var(--gutter);
+  background: var(--c-surface);
+  border-bottom: var(--bw-card) solid var(--c-border-card);
+}
+.app-header__brand {
+  display: flex; align-items: center; gap: var(--sp-sm);
+  text-decoration: none; color: var(--c-ink);
+}
+.app-header__name { font-weight: var(--fw-bold); font-size: var(--fs-h2); letter-spacing: var(--ls-tight); }
+.app-header__dot  { color: var(--c-primary); }
+.app-header__actions { display: flex; align-items: center; gap: var(--sp-sm); }
+
+/* --- Banners ------------------------------------------------------------ */
+.banner {
+  position: sticky; top: 0; z-index: var(--z-banner);
+  padding: var(--sp-sm) var(--gutter);
+  font-size: var(--fs-label); font-weight: var(--fw-semibold);
+  text-align: center;
+}
+.banner--warning { background: var(--c-warning-container); color: var(--c-on-secondary-container); }
+.banner--error   { background: var(--c-error-container);   color: var(--c-on-error-container); }
+
+/* --- Skeletons (loading state, every list view) ------------------------- */
+.skeleton {
+  background: linear-gradient(90deg, var(--c-surface-high) 25%, var(--c-surface-container) 37%, var(--c-surface-high) 63%);
+  background-size: 400% 100%;
+  animation: shimmer 1.4s ease infinite;
+  border-radius: var(--r-md);
+}
+.skeleton--title { height: 28px; width: 60%; margin-bottom: var(--sp-md); }
+.skeleton--card  { height: 140px; margin-bottom: var(--sp-md); }
+@keyframes shimmer { 0% { background-position: 100% 0; } 100% { background-position: -100% 0; } }
+
+/* --- Empty / error states ----------------------------------------------- */
+.state {
+  text-align: center;
+  padding: var(--sp-2xl) var(--sp-md);
+  border: var(--bw-card) dashed var(--c-outline-variant);
+  border-radius: var(--r-lg);
+  background: var(--c-surface-low);
+}
+.state__title { font-size: var(--fs-h2); margin-bottom: var(--sp-sm); }
+.state__body  { color: var(--c-ink-muted); margin-bottom: var(--sp-lg); }
+.state--error { border-style: solid; border-color: var(--c-error); background: var(--c-error-container); }
+.state--error .state__title { color: var(--c-on-error-container); }

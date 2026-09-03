@@ -1,0 +1,450 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>UDGAM.ai - Farmer Dashboard</title>
+<!-- Google Fonts -->
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet"/>
+<!-- Material Symbols -->
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<!-- Tailwind CSS -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<!-- Tailwind Configuration -->
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "on-background": "#1c1c18",
+                        "on-primary-fixed-variant": "#005313",
+                        "primary-fixed": "#94f990",
+                        "primary-container": "#4caf50",
+                        "on-tertiary-fixed-variant": "#52461c",
+                        "on-tertiary-fixed": "#231b00",
+                        "data-blue": "#2196F3",
+                        "primary": "#006e1c",
+                        "surface-variant": "#e5e2db",
+                        "outline": "#6f7a6b",
+                        "inverse-on-surface": "#f3f0ea",
+                        "on-secondary-fixed-variant": "#0c5216",
+                        "error-container": "#ffdad6",
+                        "surface-container-high": "#ebe8e1",
+                        "tertiary-fixed": "#f4e2a9",
+                        "surface-container": "#f0eee7",
+                        "surface-container-low": "#f6f3ec",
+                        "on-error-container": "#93000a",
+                        "on-primary": "#ffffff",
+                        "on-secondary-fixed": "#002203",
+                        "tertiary": "#6b5e31",
+                        "on-secondary-container": "#307231",
+                        "surface-tint": "#006e1c",
+                        "secondary-container": "#acf4a4",
+                        "inverse-surface": "#31312c",
+                        "earth-gray": "#4E4B42",
+                        "surface": "#fcf9f2",
+                        "tertiary-container": "#bbaa76",
+                        "on-tertiary": "#ffffff",
+                        "surface-bright": "#fcf9f2",
+                        "on-primary-container": "#003c0b",
+                        "insight-purple": "#673AB7",
+                        "surface-dim": "#dcdad3",
+                        "on-error": "#ffffff",
+                        "background": "#fcf9f2",
+                        "on-surface": "#1c1c18",
+                        "primary-fixed-dim": "#78dc77",
+                        "secondary": "#2a6b2c",
+                        "inverse-primary": "#78dc77",
+                        "surface-container-lowest": "#ffffff",
+                        "on-secondary": "#ffffff",
+                        "tertiary-fixed-dim": "#d7c690",
+                        "surface-container-highest": "#e5e2db",
+                        "error": "#ba1a1a",
+                        "on-tertiary-container": "#4a3e15",
+                        "secondary-fixed-dim": "#91d78a",
+                        "secondary-fixed": "#acf4a4",
+                        "on-primary-fixed": "#002204",
+                        "on-surface-variant": "#3f4a3c",
+                        "outline-variant": "#becab9"
+                    },
+                    borderRadius: {
+                        DEFAULT: "1rem",
+                        lg: "2rem",
+                        xl: "3rem",
+                        full: "9999px"
+                    },
+                    spacing: {
+                        "container-max": "1280px",
+                        "margin-desktop": "40px",
+                        "unit": "8px",
+                        "gutter": "24px",
+                        "margin-mobile": "16px"
+                    },
+                    fontFamily: {
+                        "label-sm": ["Public Sans"],
+                        "label-md": ["Public Sans"],
+                        "body-md": ["Public Sans"],
+                        "headline-md": ["Public Sans"],
+                        "display": ["Public Sans"],
+                        "body-lg": ["Public Sans"],
+                        "headline-lg-mobile": ["Public Sans"],
+                        "headline-lg": ["Public Sans"]
+                    },
+                    fontSize: {
+                        "label-sm": ["12px", { lineHeight: "16px", fontWeight: "500" }],
+                        "label-md": ["14px", { lineHeight: "20px", letterSpacing: "0.01em", fontWeight: "600" }],
+                        "body-md": ["16px", { lineHeight: "24px", fontWeight: "400" }],
+                        "headline-md": ["24px", { lineHeight: "32px", fontWeight: "600" }],
+                        "display": ["48px", { lineHeight: "56px", letterSpacing: "-0.02em", fontWeight: "700" }],
+                        "body-lg": ["18px", { lineHeight: "28px", fontWeight: "400" }],
+                        "headline-lg-mobile": ["28px", { lineHeight: "36px", fontWeight: "600" }],
+                        "headline-lg": ["32px", { lineHeight: "40px", fontWeight: "600" }]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        body {
+            background-color: theme('colors.background');
+            color: theme('colors.on-background');
+        }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .icon-fill {
+            font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        /* Custom scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: theme('colors.outline-variant');
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: theme('colors.outline');
+        }
+        /* Ambient shadows for floating cards */
+        .shadow-ambient {
+            box-shadow: 0 16px 32px -8px rgba(0, 110, 28, 0.08);
+        }
+        .insight-gradient-border {
+            position: relative;
+            background: linear-gradient(theme('colors.surface-container-lowest'), theme('colors.surface-container-lowest')) padding-box,
+                        linear-gradient(45deg, theme('colors.insight-purple'), theme('colors.tertiary-fixed')) border-box;
+            border: 2px solid transparent;
+        }
+    </style>
+</head>
+<body class="font-body-md antialiased overflow-x-hidden">
+<div class="flex h-screen overflow-hidden">
+<!-- SideNavBar (from JSON) -->
+<aside class="bg-surface dark:bg-surface-dim h-full w-72 fixed left-0 top-0 border-r border-outline-variant dark:border-outline shadow-sm transition-all duration-300 ease-in-out flex flex-col py-8 px-6 hidden md:flex z-50">
+<!-- Header/Brand -->
+<div class="mb-10 px-2 flex items-center gap-4">
+<img class="w-12 h-12 rounded-full object-cover border border-outline-variant" data-alt="A stylized, modern agritech logo for UDGAM.ai featuring a subtle green leaf intertwined with digital circuits, set against a pristine white background. The design is clean, organic, and professional, embodying a light-mode aesthetic with deep forest green and cream tones. The mood is innovative yet grounded." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBXWSTjExDxdOGXWtjuQqwJmjK7WhfypNnWHUfHTy3T9JV2jmM3Ha2ljlGUOxc6L5uY3KEr0YQGDqmR0cApuX-RYx_BOk7TJLvH0gaPJ_7xvZmb6unyB0aZ4AujCNYUpNDqFwuwQ-yyummB_1a_d1xfINJvK4NIib7102M2xATJPpE-SVDGZhZux9YXuz0YNasef581OrJ9BRty1BSbbGWjuIqrNvU-vDCyXaI1DL8W2b9wkICpZS6ETA"/>
+<div>
+<h1 class="font-headline-md text-headline-md font-bold text-primary dark:text-primary-fixed-dim">UDGAM.ai</h1>
+<p class="font-label-sm text-label-sm text-on-surface-variant">Modern Indian Agritech</p>
+</div>
+</div>
+<!-- Main Navigation -->
+<nav class="flex-1 space-y-2">
+<a class="flex items-center gap-3 px-4 py-3 rounded-lg bg-secondary-container/50 text-primary dark:text-primary-fixed-dim font-bold group" href="#">
+<span class="material-symbols-outlined icon-fill">dashboard</span>
+<span class="font-body-md text-body-md">Dashboard</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 rounded-lg text-on-surface-variant dark:text-surface-variant hover:bg-secondary-container/50 dark:hover:bg-secondary-fixed/10 transition-colors group" href="#">
+<span class="material-symbols-outlined group-hover:text-primary transition-colors">storefront</span>
+<span class="font-body-md text-body-md group-hover:text-primary transition-colors">Marketplace</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 rounded-lg text-on-surface-variant dark:text-surface-variant hover:bg-secondary-container/50 dark:hover:bg-secondary-fixed/10 transition-colors group" href="#">
+<span class="material-symbols-outlined group-hover:text-primary transition-colors">receipt_long</span>
+<span class="font-body-md text-body-md group-hover:text-primary transition-colors">Orders</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 rounded-lg text-on-surface-variant dark:text-surface-variant hover:bg-secondary-container/50 dark:hover:bg-secondary-fixed/10 transition-colors group" href="#">
+<span class="material-symbols-outlined group-hover:text-primary transition-colors">local_shipping</span>
+<span class="font-body-md text-body-md group-hover:text-primary transition-colors">Logistics</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 rounded-lg text-on-surface-variant dark:text-surface-variant hover:bg-secondary-container/50 dark:hover:bg-secondary-fixed/10 transition-colors group" href="#">
+<span class="material-symbols-outlined group-hover:text-primary transition-colors">analytics</span>
+<span class="font-body-md text-body-md group-hover:text-primary transition-colors">Analytics</span>
+</a>
+</nav>
+<!-- CTA -->
+<div class="mt-auto mb-8">
+<button class="w-full flex items-center justify-center gap-2 bg-tertiary-fixed text-on-tertiary-fixed-variant font-label-md text-label-md py-3 rounded-full hover:bg-tertiary-fixed-dim transition-colors shadow-ambient">
+<span class="material-symbols-outlined text-[20px]">auto_awesome</span>
+                     AI Insight
+                 </button>
+</div>
+<!-- Footer Tabs -->
+<div class="border-t border-outline-variant pt-4 space-y-2">
+<a class="flex items-center gap-3 px-4 py-2 rounded-lg text-on-surface-variant hover:bg-secondary-container/50 transition-colors" href="#">
+<span class="material-symbols-outlined text-[20px]">settings</span>
+<span class="font-label-sm text-label-sm">Settings</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-2 rounded-lg text-on-surface-variant hover:bg-secondary-container/50 transition-colors" href="#">
+<span class="material-symbols-outlined text-[20px]">help</span>
+<span class="font-label-sm text-label-sm">Support</span>
+</a>
+</div>
+</aside>
+<!-- Main Content Area -->
+<main class="flex-1 md:ml-72 flex flex-col h-full bg-background relative overflow-y-auto">
+<!-- TopNavBar (from JSON) -->
+<header class="bg-surface/80 backdrop-blur-md dark:bg-surface-dim/80 fixed top-0 right-0 w-full md:w-[calc(100%-288px)] h-20 z-40 flex justify-between items-center px-6 md:px-10">
+<!-- Mobile Menu Button (hidden on desktop) -->
+<button class="md:hidden text-on-surface-variant p-2 -ml-2 rounded-full hover:bg-surface-variant/50">
+<span class="material-symbols-outlined text-2xl">menu</span>
+</button>
+<!-- Greeting -->
+<div class="hidden md:block">
+<h2 class="font-headline-md text-headline-md font-semibold text-on-surface">Good Morning, Ramesh 👋</h2>
+<p class="font-label-md text-label-md text-on-surface-variant">Here is your farm's overview today.</p>
+</div>
+<!-- Product Name (Mobile Only Fallback) -->
+<div class="md:hidden font-headline-md text-headline-md font-extrabold text-primary dark:text-primary-fixed-dim">
+                    UDGAM.ai
+                </div>
+<!-- Actions -->
+<div class="flex items-center gap-4">
+<button class="w-10 h-10 rounded-full flex items-center justify-center text-on-surface-variant hover:bg-surface-variant/50 transition-colors scale-95 active:scale-90">
+<span class="material-symbols-outlined">language</span>
+</button>
+<button class="w-10 h-10 rounded-full flex items-center justify-center text-on-surface-variant hover:bg-surface-variant/50 transition-colors scale-95 active:scale-90 relative">
+<span class="material-symbols-outlined">notifications</span>
+<span class="absolute top-2 right-2 w-2 h-2 bg-error rounded-full"></span>
+</button>
+<!-- Profile Avatar -->
+<div class="w-10 h-10 rounded-full border-2 border-primary overflow-hidden ml-2 shadow-sm cursor-pointer">
+<img alt="Farmer or Partner Profile" class="w-full h-full object-cover" data-alt="A close-up portrait of a cheerful, experienced Indian farmer with a weathered face, wearing a traditional green turban and a crisp white shirt. The background is a soft-focus lush green field under bright morning sunlight, emphasizing a warm, reliable, and nurturing mood." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAhPnpr5RS7rBNwnPll7KaHAsrdeTIQTD8p9cx4tFB5Y1zWhqWAwn5zi1r6nXQNliFA5IYC37Hg8FWzxZMq3cGYvxZznQ-3R6bDADde3N61SnuemjQVM9iP3jDEpJadUF7d0r5APt4DOjD84fkNdRLRrpUlQvBy8M6iwiMc0REa2_G9DCDzq72byo1wv4YEFD_AL6DRySboog6By9rQvbdxoSIPSYj4chqgvjkk-lWq4E863L1NH2nBlw"/>
+</div>
+</div>
+</header>
+<!-- Dashboard Content -->
+<div class="pt-24 md:pt-28 pb-12 px-4 md:px-10 max-w-container-max mx-auto w-full space-y-gutter">
+<!-- Hero Card -->
+<section class="relative bg-surface-container-lowest rounded-xl overflow-hidden shadow-ambient border border-outline-variant/30 flex flex-col md:flex-row items-center p-8 md:p-12 gap-8">
+<div class="flex-1 z-10 space-y-4">
+<span class="inline-block px-3 py-1 bg-secondary-container text-on-secondary-container font-label-sm text-label-sm rounded-full">Welcome Back</span>
+<h2 class="font-display text-display text-primary leading-tight">आपकी मेहनत,<br/>हमारी तकनीक</h2>
+<p class="font-body-lg text-body-lg text-on-surface-variant max-w-md">Empowering your farm with AI-driven insights to maximize yield and connect with the best buyers instantly.</p>
+<button class="mt-4 px-8 py-4 bg-primary text-on-primary rounded-full font-label-md text-label-md shadow-sm hover:bg-on-primary-fixed-variant transition-colors flex items-center gap-2">
+                            Explore Marketplace
+                            <span class="material-symbols-outlined text-[20px]">arrow_forward</span>
+</button>
+</div>
+<!-- Hero Illustration / Image -->
+<div class="flex-1 w-full relative min-h-[250px] rounded-lg overflow-hidden flex justify-end">
+<div class="absolute inset-0 bg-gradient-to-r from-surface-container-lowest via-surface-container-lowest/80 to-transparent z-10 md:hidden"></div>
+<img class="w-full md:w-4/5 h-full object-cover rounded-lg" data-alt="A modern, high-quality illustration in a flat, organic style featuring a smiling farmer holding a tablet device, standing in a vibrant, stylized agricultural field with subtle technological overlays like glowing data nodes. The color palette emphasizes forest greens, warm cream tones, and soft yellows. The lighting is bright and optimistic." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDeSLS_WC7S0TBnBcavaFdqOAEe8zfsObuyZqbDo2AYaJmlWK9T71Ig85B2TcjxSmaxRv3gOu9deX2wR17syXXSCBEowYxCTUzLA3CarbQXTk7vIy5xD7EksGizNti91_6CMBqXiheRPNWHHmYxD6DC0wEJPY2FiUZdiYrfGubYsAb9PunjzgoKPxhbDIBzE_JH18lhMPWEktmZq1QbFDlB8_mxs-3xs2w4d1qCv7M-YV5IYS2EoMiVtA"/>
+</div>
+</section>
+<!-- Key Summary Grid -->
+<section class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+<div class="bg-surface-container-lowest p-6 rounded-lg border border-outline-variant/30 shadow-ambient flex flex-col gap-4">
+<div class="flex justify-between items-start">
+<div class="w-12 h-12 bg-surface-container flex items-center justify-center rounded-full text-primary">
+<span class="material-symbols-outlined text-3xl">inventory_2</span>
+</div>
+<span class="text-on-surface-variant font-label-sm text-label-sm">Active</span>
+</div>
+<div>
+<p class="text-on-surface-variant font-label-md text-label-md mb-1">My Produce</p>
+<h3 class="font-headline-md text-headline-md text-on-surface font-bold">12 <span class="text-body-md font-normal text-on-surface-variant">Tons</span></h3>
+</div>
+</div>
+<div class="bg-surface-container-lowest p-6 rounded-lg border border-outline-variant/30 shadow-ambient flex flex-col gap-4">
+<div class="flex justify-between items-start">
+<div class="w-12 h-12 bg-tertiary-fixed flex items-center justify-center rounded-full text-on-tertiary-fixed-variant">
+<span class="material-symbols-outlined text-3xl">payments</span>
+</div>
+<span class="text-on-surface-variant font-label-sm text-label-sm flex items-center text-primary"><span class="material-symbols-outlined text-[16px]">trending_up</span> +14%</span>
+</div>
+<div>
+<p class="text-on-surface-variant font-label-md text-label-md mb-1">Expected Earnings</p>
+<h3 class="font-headline-md text-headline-md text-on-surface font-bold">₹45,200</h3>
+</div>
+</div>
+<div class="bg-surface-container-lowest p-6 rounded-lg border border-outline-variant/30 shadow-ambient flex flex-col gap-4">
+<div class="flex justify-between items-start">
+<div class="w-12 h-12 bg-secondary-container flex items-center justify-center rounded-full text-on-secondary-container">
+<span class="material-symbols-outlined text-3xl">monitoring</span>
+</div>
+<span class="text-on-surface-variant font-label-sm text-label-sm">Market Avg</span>
+</div>
+<div>
+<p class="text-on-surface-variant font-label-md text-label-md mb-1">Price Trend (Tomato)</p>
+<h3 class="font-headline-md text-headline-md text-on-surface font-bold">₹18 <span class="text-body-md font-normal text-on-surface-variant">/kg</span></h3>
+</div>
+</div>
+<div class="bg-surface-container-lowest p-6 rounded-lg border border-outline-variant/30 shadow-ambient flex flex-col gap-4">
+<div class="flex justify-between items-start">
+<div class="w-12 h-12 bg-surface-container-high flex items-center justify-center rounded-full text-on-surface">
+<span class="material-symbols-outlined text-3xl">local_shipping</span>
+</div>
+<span class="text-on-surface-variant font-label-sm text-label-sm text-primary">In Transit</span>
+</div>
+<div>
+<p class="text-on-surface-variant font-label-md text-label-md mb-1">Active Orders</p>
+<h3 class="font-headline-md text-headline-md text-on-surface font-bold">3</h3>
+</div>
+</div>
+</section>
+<!-- Bento Grid: AI Insights & Quick Actions -->
+<section class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+<!-- AI Insight Card (Spans 2 columns on large screens) -->
+<div class="lg:col-span-2 flex flex-col gap-6">
+<div class="insight-gradient-border rounded-xl p-6 md:p-8 flex flex-col md:flex-row gap-6 items-start md:items-center relative overflow-hidden">
+<!-- Subtle background glow -->
+<div class="absolute -top-24 -right-24 w-64 h-64 bg-insight-purple/10 rounded-full blur-3xl pointer-events-none"></div>
+<div class="w-16 h-16 bg-insight-purple/10 rounded-full flex items-center justify-center text-insight-purple shrink-0">
+<span class="material-symbols-outlined text-4xl icon-fill">neurology</span>
+</div>
+<div class="flex-1">
+<div class="flex items-center gap-2 mb-2">
+<span class="material-symbols-outlined text-insight-purple text-[18px]">auto_awesome</span>
+<span class="font-label-sm text-label-sm text-insight-purple font-bold tracking-wider uppercase">UDGAM Recommendation</span>
+</div>
+<h3 class="font-headline-lg-mobile md:font-headline-lg text-on-surface mb-2">Hold Tomatoes for 4 Days</h3>
+<p class="font-body-md text-body-md text-on-surface-variant max-w-xl">Our AI models predict a <strong>12% surge in demand</strong> for Tomatoes in the nearby Mandi due to upcoming local festivals. Holding stock will likely increase your margins significantly.</p>
+</div>
+<button class="mt-4 md:mt-0 px-6 py-3 bg-surface-container-high text-on-surface rounded-full font-label-md text-label-md border border-outline-variant hover:bg-surface-variant transition-colors whitespace-nowrap">
+                                View Market Data
+                            </button>
+</div>
+<!-- Buyer Suggestion Card -->
+<div class="bg-tertiary-fixed/30 rounded-xl p-6 md:p-8 border border-tertiary-fixed-dim/50 shadow-ambient flex flex-col sm:flex-row justify-between items-center gap-4">
+<div>
+<h4 class="font-label-md text-label-md text-on-surface-variant mb-1 uppercase tracking-wide">Best Selling Option</h4>
+<p class="font-headline-md text-headline-md text-on-surface font-semibold">Aggregate &amp; Sell to Bulk Buyer</p>
+<p class="font-body-md text-body-md text-on-surface-variant mt-2 flex items-center gap-2">
+<span class="material-symbols-outlined text-primary text-[18px]">verified_user</span>
+                                    Match: FreshMart Procurements (Requires 5 Tons)
+                                </p>
+</div>
+<button class="px-6 py-3 bg-tertiary text-on-tertiary rounded-full font-label-md text-label-md shadow-sm hover:opacity-90 transition-opacity whitespace-nowrap w-full sm:w-auto text-center">
+                                Review Offer
+                            </button>
+</div>
+</div>
+<!-- Quick Actions Side Column -->
+<div class="bg-surface-container-lowest rounded-xl border border-outline-variant/30 p-6 flex flex-col gap-6 shadow-ambient">
+<h3 class="font-headline-md text-headline-md text-on-surface mb-2">Quick Actions</h3>
+<div class="grid grid-cols-2 gap-4 flex-1">
+<button class="flex flex-col items-center justify-center p-4 bg-surface rounded-lg border border-outline-variant/50 hover:bg-secondary-container/20 hover:border-primary-container/50 transition-all group aspect-square">
+<div class="w-12 h-12 rounded-full bg-surface-container mb-3 flex items-center justify-center text-primary group-hover:scale-110 transition-transform">
+<span class="material-symbols-outlined text-2xl">add_circle</span>
+</div>
+<span class="font-label-sm text-label-sm text-on-surface-variant group-hover:text-primary text-center">Add<br/>Produce</span>
+</button>
+<button class="flex flex-col items-center justify-center p-4 bg-surface rounded-lg border border-outline-variant/50 hover:bg-secondary-container/20 hover:border-primary-container/50 transition-all group aspect-square">
+<div class="w-12 h-12 rounded-full bg-surface-container mb-3 flex items-center justify-center text-primary group-hover:scale-110 transition-transform">
+<span class="material-symbols-outlined text-2xl">person_search</span>
+</div>
+<span class="font-label-sm text-label-sm text-on-surface-variant group-hover:text-primary text-center">Find<br/>Buyers</span>
+</button>
+<button class="flex flex-col items-center justify-center p-4 bg-surface rounded-lg border border-outline-variant/50 hover:bg-secondary-container/20 hover:border-primary-container/50 transition-all group aspect-square">
+<div class="w-12 h-12 rounded-full bg-surface-container mb-3 flex items-center justify-center text-primary group-hover:scale-110 transition-transform">
+<span class="material-symbols-outlined text-2xl">route</span>
+</div>
+<span class="font-label-sm text-label-sm text-on-surface-variant group-hover:text-primary text-center">Track<br/>Order</span>
+</button>
+<button class="flex flex-col items-center justify-center p-4 bg-surface rounded-lg border border-outline-variant/50 hover:bg-secondary-container/20 hover:border-primary-container/50 transition-all group aspect-square">
+<div class="w-12 h-12 rounded-full bg-surface-container mb-3 flex items-center justify-center text-primary group-hover:scale-110 transition-transform">
+<span class="material-symbols-outlined text-2xl">forum</span>
+</div>
+<span class="font-label-sm text-label-sm text-on-surface-variant group-hover:text-primary text-center">Expert<br/>Chat</span>
+</button>
+</div>
+</div>
+</section>
+<!-- My Produce List -->
+<section class="bg-surface-container-lowest rounded-xl border border-outline-variant/30 p-6 md:p-8 shadow-ambient">
+<div class="flex justify-between items-center mb-6">
+<h3 class="font-headline-md text-headline-md text-on-surface">My Active Produce</h3>
+<a class="text-primary font-label-md text-label-md hover:underline flex items-center gap-1" href="#">View All <span class="material-symbols-outlined text-[16px]">arrow_forward</span></a>
+</div>
+<div class="overflow-x-auto pb-4">
+<div class="flex gap-4 min-w-max">
+<!-- Produce Item -->
+<div class="w-72 bg-surface rounded-lg border border-outline-variant/50 overflow-hidden group hover:shadow-md transition-shadow">
+<div class="h-32 bg-surface-container relative">
+<img class="w-full h-full object-cover" data-alt="A macro shot of fresh, vibrant red tomatoes still on the vine in a modern greenhouse setting. The background is a soft, blurred green. Bright, natural sunlight highlights the water droplets on the smooth skin of the tomatoes, conveying freshness and quality in a clean, high-end agritech context." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBta1RUiCcxhD8vITkabp0uT_A7cxz0ey-YkD609MVshc79UnIT6jP-3oDK4zM0znFqLvQxamCamZJ_Gl-9PuzPeY3Cp-oRDhsvia8YrTtnVKMF2b4fzwCFy3MYPbdEZt9r_YLGbyTeRTqnj3WG94nSvtXcGG03REYvVaAcqpCC7kkIQA9XjhBo_D_XA59NDzrsedIKklITEwrAaEEcpEohxY1F1V0BNS-L6-NmQckld5dS5OaxIOcS2g"/>
+<div class="absolute top-2 right-2 px-2 py-1 bg-surface/90 backdrop-blur-sm rounded-md font-label-sm text-label-sm text-on-surface flex items-center gap-1 shadow-sm">
+<span class="w-2 h-2 rounded-full bg-primary-container"></span> Ready
+                                    </div>
+</div>
+<div class="p-4">
+<h4 class="font-label-md text-label-md text-on-surface mb-1">Premium Tomatoes</h4>
+<div class="flex justify-between items-center mt-2">
+<span class="text-on-surface-variant font-body-md text-body-md">4.5 Tons</span>
+<span class="text-primary font-label-md text-label-md">₹18/kg</span>
+</div>
+</div>
+</div>
+<!-- Produce Item -->
+<div class="w-72 bg-surface rounded-lg border border-outline-variant/50 overflow-hidden group hover:shadow-md transition-shadow">
+<div class="h-32 bg-surface-container relative">
+<img class="w-full h-full object-cover" data-alt="A close-up of freshly harvested, bright green Okra (Bhindi) neatly arranged in a woven bamboo basket. The lighting is soft and diffused, creating a serene, organic aesthetic. The image conveys crispness and farm-to-table freshness typical of premium agricultural produce." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBCvNhPjhzMOMLfSE_F9iPi7eb4wExoKfKAwEjyzBWSRFluKZi8nV2uwIrrgqhrlG-xmOn9EA1ydU10eJoNNQPTHmYNdjWiBbZQAeUxw5AKyQtlrEcsoMIW4x-wrN0i-uxShTesL1nnaG6aOHw4rpURqssUkYqJ0uxR0B6uIkPeQ8xYQ_kL1e1x7JxxVDtEJqxvucnuX2Ocavqqr_sP6zsxtV6vSz9bkohZjbjFM_Rj0SPg4YaSv5ozgQ"/>
+<div class="absolute top-2 right-2 px-2 py-1 bg-surface/90 backdrop-blur-sm rounded-md font-label-sm text-label-sm text-on-surface flex items-center gap-1 shadow-sm">
+<span class="w-2 h-2 rounded-full bg-secondary-container"></span> Growing
+                                    </div>
+</div>
+<div class="p-4">
+<h4 class="font-label-md text-label-md text-on-surface mb-1">Okra (Bhindi)</h4>
+<div class="flex justify-between items-center mt-2">
+<span class="text-on-surface-variant font-body-md text-body-md">2.0 Tons</span>
+<span class="text-on-surface-variant font-label-md text-label-md text-sm">Est. ₹35/kg</span>
+</div>
+</div>
+</div>
+<!-- Produce Item -->
+<div class="w-72 bg-surface rounded-lg border border-outline-variant/50 overflow-hidden group hover:shadow-md transition-shadow">
+<div class="h-32 bg-surface-container relative">
+<img class="w-full h-full object-cover" data-alt="A top-down view of a pristine, tightly packed green cabbage sitting on dark, rich soil. Dewdrops gently cling to the outer leaves. The lighting is dramatic yet natural, emphasizing the texture of the leaves and the vitality of the plant in a clean, modern agricultural setting." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCBh7woD2zQgOE-ns3JP_Q8EYQ0Q75ZejXQzZegd71fjI36RFD2bM9Midiybi3yo42Mr7tmYqOcLkC1aJBJO17jEfB-3c1qVtJY65G5zHJOZWA0iTg8nt4nmh7QjXlfo96NrsY-XmmwncsJxcQdIRaHSuLNwvSH13uiE4OLN_J4nPSAc_H8_ClVDC-sbIUBQVBTnX8lA-cuJzMmBGfKGs5_5zNCjLiQB18CMMQny6pr-1QueotixaFrlA"/>
+<div class="absolute top-2 right-2 px-2 py-1 bg-surface/90 backdrop-blur-sm rounded-md font-label-sm text-label-sm text-on-surface flex items-center gap-1 shadow-sm">
+<span class="w-2 h-2 rounded-full bg-primary-container"></span> Ready
+                                    </div>
+</div>
+<div class="p-4">
+<h4 class="font-label-md text-label-md text-on-surface mb-1">Green Cabbage</h4>
+<div class="flex justify-between items-center mt-2">
+<span class="text-on-surface-variant font-body-md text-body-md">5.5 Tons</span>
+<span class="text-primary font-label-md text-label-md">₹12/kg</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+</section>
+</div>
+<!-- Footer (from JSON) -->
+<footer class="bg-surface-container-lowest dark:bg-inverse-surface w-full py-12 border-t border-outline-variant dark:border-outline mt-auto">
+<div class="max-w-container-max mx-auto px-6 md:px-margin-desktop flex flex-col md:flex-row justify-between items-center gap-6">
+<div class="flex flex-col items-center md:items-start">
+<span class="font-headline-md text-headline-md text-on-surface dark:text-inverse-on-surface mb-2">UDGAM.ai</span>
+<p class="font-label-sm text-label-sm text-on-surface-variant">© 2024 UDGAM.ai - Empowering Indian Agriculture</p>
+</div>
+<div class="flex flex-wrap justify-center gap-6">
+<a class="font-label-sm text-label-sm text-on-surface-variant dark:text-surface-variant hover:text-primary underline opacity-80 hover:opacity-100 transition-opacity" href="#">About Us</a>
+<a class="font-label-sm text-label-sm text-on-surface-variant dark:text-surface-variant hover:text-primary underline opacity-80 hover:opacity-100 transition-opacity" href="#">Contact</a>
+<a class="font-label-sm text-label-sm text-on-surface-variant dark:text-surface-variant hover:text-primary underline opacity-80 hover:opacity-100 transition-opacity" href="#">Privacy Policy</a>
+<a class="font-label-sm text-label-sm text-on-surface-variant dark:text-surface-variant hover:text-primary underline opacity-80 hover:opacity-100 transition-opacity" href="#">Terms of Service</a>
+</div>
+</div>
+</footer>
+</main>
+</div>
+</body></html>

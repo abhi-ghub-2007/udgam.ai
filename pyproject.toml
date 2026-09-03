@@ -1,0 +1,15 @@
+[project]
+name = "udgam-ai"
+version = "0.1.0"
+description = "Direct farmer-to-buyer agricultural marketplace (SIH26033)"
+requires-python = ">=3.11"
+
+[tool.pytest.ini_options]
+pythonpath = ["."]
+testpaths = ["tests"]
+asyncio_default_fixture_loop_scope = "function"
+filterwarnings = ["ignore::DeprecationWarning"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"

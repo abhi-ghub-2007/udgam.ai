@@ -1,0 +1,154 @@
+/* ===========================================================================
+   UDGAM.ai design tokens
+   Transcribed from design_reference/udgam.ai/DESIGN.md, which is the design
+   authority (A-1). Component CSS references these variables and NEVER a raw
+   literal (PRD section 5.1).
+
+   Design intent, in one line: readable in direct sunlight, tappable with
+   calloused hands, and structurally ready for Devanagari text that runs
+   25-35% longer than its English source.
+   =========================================================================== */
+
+:root {
+  /* Values below are the Stitch design system
+     (stitch_udgam.ai_agriculture_ecosystem). Stitch expresses them as a
+     Tailwind config, which the UDGAM stack forbids; the palette, type scale
+     and radii are ported here verbatim so the app keeps that exact visual
+     identity on plain CSS. Token NAMES are unchanged, so no component or view
+     needed rewriting for the swap. */
+
+  /* --- Colour: primary (Earth Green) ------------------------------------ */
+  --c-primary:                #006e1c;
+  --c-primary-strong:         #005313;
+  --c-primary-container:      #acf4a4;
+  --c-on-primary:             #FFFFFF;
+  --c-on-primary-container:   #003c0b;
+  --c-primary-bright:         #4caf50;   /* status dot / "ready" pip */
+
+  /* --- Colour: secondary (Harvest Gold) --------------------------------- */
+  --c-secondary:              #6b5e31;
+  --c-secondary-strong:       #52461c;
+  --c-secondary-container:    #f4e2a9;
+  --c-on-secondary:           #FFFFFF;
+  --c-on-secondary-container: #4a3e15;
+
+  /* --- Colour: tertiary -------------------------------------------------- */
+  --c-tertiary:               #2a6b2c;
+  --c-tertiary-container:     #acf4a4;
+  --c-on-tertiary:            #FFFFFF;
+
+  /* Reserved in Stitch for AI/model output only, never for ordinary UI. */
+  --c-insight:                #673AB7;
+
+  /* --- Colour: surfaces --------------------------------------------------
+     Creamy off-white, not pure white: cuts glare in outdoor field settings. */
+  --c-bg:                     #fcf9f2;
+  --c-surface:                #ffffff;
+  --c-surface-low:            #f6f3ec;
+  --c-surface-container:      #f0eee7;
+  --c-surface-high:           #ebe8e1;
+  --c-surface-highest:        #e5e2db;
+  --c-inverse-surface:        #31312c;
+  --c-inverse-on-surface:     #f3f0ea;
+
+  /* --- Colour: ink & lines ---------------------------------------------- */
+  --c-ink:                    #1c1c18;
+  --c-ink-muted:              #3f4a3c;
+  --c-outline:                #6f7a6b;
+  --c-outline-variant:        #becab9;
+  --c-border-card:            #dfe6dc;
+  --c-border-input:           #6f7a6b;
+
+  /* --- Colour: status ---------------------------------------------------- */
+  --c-error:                  #ba1a1a;
+  --c-error-container:        #ffdad6;
+  --c-on-error:               #FFFFFF;
+  --c-on-error-container:     #93000a;
+  --c-success:                #006e1c;
+  --c-success-container:      #acf4a4;
+  --c-warning:                #52461c;
+  --c-warning-container:      #f4e2a9;
+
+  /* --- Typography --------------------------------------------------------
+     Stitch specifies Public Sans; it is loaded in index.html with the system
+     stack behind it, so a failed font fetch on a rural connection degrades to
+     native rendering (and to correct Devanagari shaping) rather than blocking
+     paint. */
+  --font-sans: 'Public Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto,
+               'Noto Sans Devanagari', 'Noto Sans', sans-serif;
+
+  --fs-display:   2rem;      /* 32px */
+  --fs-stat:      1.75rem;   /* 28px */
+  --fs-h1:        1.5rem;    /* 24px */
+  --fs-h2:        1.25rem;   /* 20px */
+  --fs-body:      1rem;      /* 16px - HARD FLOOR for body text */
+  --fs-label:     0.875rem;  /* 14px - labels and captions only, never prose */
+
+  /* 1.5x minimum everywhere: below this, Hindi matras and the shirorekha
+     clip against the line above. */
+  --lh-display:   1.5;
+  --lh-heading:   1.5;
+  --lh-body:      1.625;
+
+  --fw-regular:   400;       /* lightest permitted weight */
+  --fw-semibold:  600;
+  --fw-bold:      700;
+  --ls-tight:    -0.02em;
+  --ls-caps:      0.04em;
+
+  /* --- Spacing: 8px rhythm ---------------------------------------------- */
+  --sp-xs:    4px;
+  --sp-sm:    8px;
+  --sp-md:   16px;
+  --sp-lg:   24px;
+  --sp-xl:   32px;
+  --sp-2xl:  48px;
+  --gutter:  16px;
+
+  /* --- Touch targets ------------------------------------------------------
+     48px floor, 52px for primary actions. Non-negotiable: the target user
+     has calloused hands and a low-end capacitive screen. */
+  --tap-min:      48px;
+  --tap-primary:  52px;
+
+  /* --- Radius ------------------------------------------------------------ */
+  --r-sm:    4px;
+  --r-md:   12px;   /* buttons, inputs */
+  --r-lg:   16px;   /* container cards */
+  --r-img:   8px;   /* every crop thumbnail */
+  --r-full: 9999px; /* pills, badges */
+
+  /* --- Borders over shadows ---------------------------------------------
+     Bold borders survive max screen brightness outdoors; shadows wash out. */
+  --bw-card:   1.5px;
+  --bw-input:  2px;
+  --bw-focus:  3px;
+  --shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.06);
+  /* Stitch's "shadow-ambient": tinted with the primary green rather than
+     black, so cards lift off the cream background without going grey. */
+  --shadow-ambient: 0 16px 32px -8px rgba(0, 110, 28, 0.08);
+
+  /* --- Layout ------------------------------------------------------------ */
+  --content-max:  1280px;
+  --nav-height:   64px;
+  --sidebar-w:    272px;
+  --z-nav:        100;
+  --z-banner:     200;
+  --z-modal:      300;
+  --z-toast:      400;
+
+  /* --- Motion ------------------------------------------------------------ */
+  --dur-fast:   120ms;
+  --dur-base:   200ms;
+  --ease:       cubic-bezier(0.2, 0, 0.2, 1);
+}
+
+/* Honour the OS-level reduced-motion setting. */
+@media (prefers-reduced-motion: reduce) {
+  :root { --dur-fast: 0ms; --dur-base: 0ms; }
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

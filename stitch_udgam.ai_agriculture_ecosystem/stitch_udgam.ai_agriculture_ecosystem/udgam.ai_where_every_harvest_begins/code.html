@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>UDGAM.ai - Where Every Harvest Begins</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              "colors": {
+                      "on-background": "#1c1c18",
+                      "on-primary-fixed-variant": "#005313",
+                      "primary-fixed": "#94f990",
+                      "primary-container": "#4caf50",
+                      "on-tertiary-fixed-variant": "#52461c",
+                      "on-tertiary-fixed": "#231b00",
+                      "data-blue": "#2196F3",
+                      "primary": "#006e1c",
+                      "surface-variant": "#e5e2db",
+                      "outline": "#6f7a6b",
+                      "inverse-on-surface": "#f3f0ea",
+                      "on-secondary-fixed-variant": "#0c5216",
+                      "error-container": "#ffdad6",
+                      "surface-container-high": "#ebe8e1",
+                      "tertiary-fixed": "#f4e2a9",
+                      "surface-container": "#f0eee7",
+                      "surface-container-low": "#f6f3ec",
+                      "on-error-container": "#93000a",
+                      "on-primary": "#ffffff",
+                      "on-secondary-fixed": "#002203",
+                      "tertiary": "#6b5e31",
+                      "on-secondary-container": "#307231",
+                      "surface-tint": "#006e1c",
+                      "secondary-container": "#acf4a4",
+                      "inverse-surface": "#31312c",
+                      "earth-gray": "#4E4B42",
+                      "surface": "#fcf9f2",
+                      "tertiary-container": "#bbaa76",
+                      "on-tertiary": "#ffffff",
+                      "surface-bright": "#fcf9f2",
+                      "on-primary-container": "#003c0b",
+                      "insight-purple": "#673AB7",
+                      "surface-dim": "#dcdad3",
+                      "on-error": "#ffffff",
+                      "background": "#fcf9f2",
+                      "on-surface": "#1c1c18",
+                      "primary-fixed-dim": "#78dc77",
+                      "secondary": "#2a6b2c",
+                      "inverse-primary": "#78dc77",
+                      "surface-container-lowest": "#ffffff",
+                      "on-secondary": "#ffffff",
+                      "tertiary-fixed-dim": "#d7c690",
+                      "surface-container-highest": "#e5e2db",
+                      "error": "#ba1a1a",
+                      "on-tertiary-container": "#4a3e15",
+                      "secondary-fixed-dim": "#91d78a",
+                      "secondary-fixed": "#acf4a4",
+                      "on-primary-fixed": "#002204",
+                      "on-surface-variant": "#3f4a3c",
+                      "outline-variant": "#becab9"
+              },
+              "borderRadius": {
+                      "DEFAULT": "1rem",
+                      "lg": "2rem",
+                      "xl": "3rem",
+                      "full": "9999px"
+              },
+              "spacing": {
+                      "container-max": "1280px",
+                      "margin-desktop": "40px",
+                      "unit": "8px",
+                      "gutter": "24px",
+                      "margin-mobile": "16px"
+              },
+              "fontFamily": {
+                      "label-sm": [
+                              "Public Sans"
+                      ],
+                      "label-md": [
+                              "Public Sans"
+                      ],
+                      "body-md": [
+                              "Public Sans"
+                      ],
+                      "headline-md": [
+                              "Public Sans"
+                      ],
+                      "display": [
+                              "Public Sans"
+                      ],
+                      "body-lg": [
+                              "Public Sans"
+                      ],
+                      "headline-lg-mobile": [
+                              "Public Sans"
+                      ],
+                      "headline-lg": [
+                              "Public Sans"
+                      ]
+              },
+              "fontSize": {
+                      "label-sm": [
+                              "12px",
+                              {
+                                      "lineHeight": "16px",
+                                      "fontWeight": "500"
+                              }
+                      ],
+                      "label-md": [
+                              "14px",
+                              {
+                                      "lineHeight": "20px",
+                                      "letterSpacing": "0.01em",
+                                      "fontWeight": "600"
+                              }
+                      ],
+                      "body-md": [
+                              "16px",
+                              {
+                                      "lineHeight": "24px",
+                                      "fontWeight": "400"
+                              }
+                      ],
+                      "headline-md": [
+                              "24px",
+                              {
+                                      "lineHeight": "32px",
+                                      "fontWeight": "600"
+                              }
+                      ],
+                      "display": [
+                              "48px",
+                              {
+                                      "lineHeight": "56px",
+                                      "letterSpacing": "-0.02em",
+                                      "fontWeight": "700"
+                              }
+                      ],
+                      "body-lg": [
+                              "18px",
+                              {
+                                      "lineHeight": "28px",
+                                      "fontWeight": "400"
+                              }
+                      ],
+                      "headline-lg-mobile": [
+                              "28px",
+                              {
+                                      "lineHeight": "36px",
+                                      "fontWeight": "600"
+                              }
+                      ],
+                      "headline-lg": [
+                              "32px",
+                              {
+                                      "lineHeight": "40px",
+                                      "fontWeight": "600"
+                              }
+                      ]
+              }
+      },
+          },
+        }
+      </script>
+<style>
+        body {
+            background-color: #fcf9f2; /* background color */
+            color: #1c1c18; /* on-background */
+        }
+        .hero-pattern {
+            background-image: radial-gradient(circle at 10% 20%, rgba(76, 175, 80, 0.05) 0%, transparent 50%),
+                              radial-gradient(circle at 90% 80%, rgba(107, 94, 49, 0.05) 0%, transparent 50%);
+        }
+      </style>
+</head>
+<body class="font-body-md text-body-md antialiased hero-pattern min-h-screen flex flex-col">
+<!-- Top Navigation (Custom Landing Page Header) -->
+<header class="w-full fixed top-0 z-50 bg-surface/80 backdrop-blur-md border-b border-surface-variant transition-all duration-300">
+<div class="max-w-container-max mx-auto px-margin-desktop h-20 flex justify-between items-center">
+<!-- Logo Area -->
+<div class="flex items-center gap-2">
+<div class="w-10 h-10 rounded-full bg-primary-container flex items-center justify-center text-on-primary-container">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">eco</span>
+</div>
+<span class="font-headline-md text-headline-md font-extrabold text-primary">UDGAM.ai</span>
+</div>
+<!-- Desktop Nav Links -->
+<nav class="hidden md:flex items-center gap-8">
+<a class="font-label-md text-label-md text-primary font-bold border-b-2 border-primary py-2" href="#">Home</a>
+<a class="font-label-md text-label-md text-on-surface-variant hover:text-primary transition-colors py-2" href="#">How It Works</a>
+<a class="font-label-md text-label-md text-on-surface-variant hover:text-primary transition-colors py-2" href="#">About</a>
+<a class="font-label-md text-label-md text-on-surface-variant hover:text-primary transition-colors py-2" href="#">Contact</a>
+</nav>
+<!-- Actions -->
+<div class="hidden md:flex items-center gap-4">
+<a class="font-label-md text-label-md text-primary hover:bg-surface-variant px-4 py-2 rounded-full transition-colors" href="#">Login</a>
+<a class="font-label-md text-label-md bg-primary text-on-primary px-6 py-2 rounded-full hover:bg-primary-container hover:text-on-primary-container transition-colors shadow-sm" href="#">Get Started</a>
+</div>
+<!-- Mobile Menu Toggle -->
+<button class="md:hidden text-on-surface p-2">
+<span class="material-symbols-outlined">menu</span>
+</button>
+</div>
+</header>
+<!-- Main Content Canvas -->
+<main class="flex-grow pt-20">
+<!-- Hero Section -->
+<section class="w-full relative overflow-hidden pt-16 pb-24 md:pt-32 md:pb-40">
+<!-- Background Image -->
+<div class="absolute inset-0 z-0 opacity-20 bg-cover bg-center" data-alt="A sweeping, breathtaking wide-angle view of a modern Indian agricultural landscape at golden hour. Lush, vibrant green terraced fields stretch into the distance under a warm, glowing amber sky. In the foreground, subtle technological elements like gentle glowing nodes or soft data streams integrate seamlessly into the natural environment, suggesting advanced AI harmony with nature. The overall aesthetic is serene, professional, and optimistic, heavily featuring deep forest greens and warm organic sunlight, perfectly aligning with a sophisticated agritech platform." style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuDjYS2pYhTfZai0dxu1n8y1Y-nOxLWppaw3t-l3qP-N-Fm3eyKmrOWKuPlWUa4JaE9L122RebCraG4zEeDR5NZEAxSPTbO9GmUJYG29exqxxNVpOujMMwZFPwCMieGD5LdopBPMqLygzdulKgv0S-qmTjEO3BZ41018H9eMZ2NkBLUresL36KfN9pbPP_tGxP0EnH7i_9WPxEI0FyLU-TAGCEmumYyk2pYBUV3As6mRdRp3idDiWAL-qw')"></div>
+<div class="max-w-container-max mx-auto px-margin-desktop relative z-10 flex flex-col items-center text-center">
+<!-- Chip -->
+<div class="inline-flex items-center gap-2 bg-secondary-container/30 border border-primary/20 px-4 py-1.5 rounded-full mb-8">
+<span class="material-symbols-outlined text-primary text-sm" style="font-variation-settings: 'FILL' 1;">auto_awesome</span>
+<span class="font-label-sm text-label-sm text-primary tracking-wide">Human-Centric AI for Agriculture</span>
+</div>
+<!-- Headline -->
+<h1 class="font-display text-display text-on-background max-w-4xl mb-6 leading-tight">
+                    Where Every <span class="text-primary">Harvest</span> Begins.
+                </h1>
+<!-- Subhead -->
+<p class="font-body-lg text-body-lg text-on-surface-variant max-w-2xl mb-12">
+                    Empowering the future of Indian agriculture by seamlessly connecting farmers, institutional buyers, and logistics networks through intelligent, data-driven insights.
+                </p>
+<!-- CTA Cluster -->
+<div class="flex flex-col sm:flex-row gap-4 w-full sm:w-auto">
+<a class="bg-primary text-on-primary font-label-md text-label-md px-8 py-4 rounded-full flex items-center justify-center gap-2 hover:bg-primary-fixed-variant transition-all shadow-lg hover:shadow-xl hover:-translate-y-1" href="#">
+                        Get Started
+                        <span class="material-symbols-outlined text-sm">arrow_forward</span>
+</a>
+<a class="border-2 border-primary text-primary bg-surface/50 backdrop-blur-sm font-label-md text-label-md px-8 py-4 rounded-full flex items-center justify-center gap-2 hover:bg-surface-variant transition-all" href="#">
+<span class="material-symbols-outlined text-sm">play_circle</span>
+                        How It Works
+                    </a>
+</div>
+</div>
+</section>
+<!-- Role Selection Section (Who are you?) -->
+<section class="w-full py-24 bg-surface-container-low relative">
+<div class="max-w-container-max mx-auto px-margin-desktop">
+<div class="text-center mb-16">
+<h2 class="font-headline-lg text-headline-lg text-on-background mb-4">Choose Your Path</h2>
+<p class="font-body-md text-body-md text-on-surface-variant">Select your role to discover tailored AI solutions for your agricultural journey.</p>
+</div>
+<!-- Bento-style Grid -->
+<div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+<!-- Farmer Card -->
+<div class="group relative bg-surface rounded-xl border border-surface-variant p-8 shadow-sm hover:shadow-lg transition-all duration-300 overflow-hidden flex flex-col h-full hover:-translate-y-2">
+<!-- Decorative bg element -->
+<div class="absolute -right-12 -top-12 w-40 h-40 bg-primary-container/10 rounded-full blur-2xl group-hover:bg-primary-container/20 transition-all"></div>
+<div class="w-16 h-16 rounded-2xl bg-secondary-container flex items-center justify-center text-on-secondary-container mb-6 relative z-10">
+<span class="material-symbols-outlined text-3xl" style="font-variation-settings: 'FILL' 1;">psychiatry</span>
+</div>
+<h3 class="font-headline-md text-headline-md text-on-background mb-3 relative z-10">Farmer / FPO</h3>
+<p class="font-body-md text-body-md text-on-surface-variant mb-8 flex-grow relative z-10">
+                            Access predictive yield analytics, fair market pricing, and direct connections to verified buyers to maximize your harvest's value.
+                        </p>
+<a class="inline-flex items-center gap-2 font-label-md text-label-md text-primary group-hover:text-primary-fixed-variant transition-colors relative z-10" href="#">
+                            Continue as Farmer
+                            <span class="material-symbols-outlined text-sm group-hover:translate-x-1 transition-transform">arrow_forward</span>
+</a>
+</div>
+<!-- Buyer Card -->
+<div class="group relative bg-surface rounded-xl border border-surface-variant p-8 shadow-sm hover:shadow-lg transition-all duration-300 overflow-hidden flex flex-col h-full hover:-translate-y-2">
+<div class="absolute -right-12 -top-12 w-40 h-40 bg-tertiary-container/10 rounded-full blur-2xl group-hover:bg-tertiary-container/20 transition-all"></div>
+<div class="w-16 h-16 rounded-2xl bg-tertiary-fixed flex items-center justify-center text-on-tertiary-fixed mb-6 relative z-10">
+<span class="material-symbols-outlined text-3xl" style="font-variation-settings: 'FILL' 1;">storefront</span>
+</div>
+<h3 class="font-headline-md text-headline-md text-on-background mb-3 relative z-10">Institutional Buyer</h3>
+<p class="font-body-md text-body-md text-on-surface-variant mb-8 flex-grow relative z-10">
+                            Source high-quality produce directly from verified farmers with transparent traceability, volume forecasting, and streamlined procurement.
+                        </p>
+<a class="inline-flex items-center gap-2 font-label-md text-label-md text-tertiary group-hover:text-on-tertiary-container transition-colors relative z-10" href="#">
+                            Continue as Buyer
+                            <span class="material-symbols-outlined text-sm group-hover:translate-x-1 transition-transform">arrow_forward</span>
+</a>
+</div>
+<!-- Transporter Card -->
+<div class="group relative bg-surface rounded-xl border border-surface-variant p-8 shadow-sm hover:shadow-lg transition-all duration-300 overflow-hidden flex flex-col h-full hover:-translate-y-2">
+<div class="absolute -right-12 -top-12 w-40 h-40 bg-outline/10 rounded-full blur-2xl group-hover:bg-outline/20 transition-all"></div>
+<div class="w-16 h-16 rounded-2xl bg-surface-variant flex items-center justify-center text-on-surface-variant mb-6 relative z-10">
+<span class="material-symbols-outlined text-3xl" style="font-variation-settings: 'FILL' 1;">local_shipping</span>
+</div>
+<h3 class="font-headline-md text-headline-md text-on-background mb-3 relative z-10">Logistics Partner</h3>
+<p class="font-body-md text-body-md text-on-surface-variant mb-8 flex-grow relative z-10">
+                            Optimize your routes, reduce empty miles, and secure consistent agricultural freight contracts through intelligent demand matching.
+                        </p>
+<a class="inline-flex items-center gap-2 font-label-md text-label-md text-outline group-hover:text-on-surface transition-colors relative z-10" href="#">
+                            Continue as Transporter
+                            <span class="material-symbols-outlined text-sm group-hover:translate-x-1 transition-transform">arrow_forward</span>
+</a>
+</div>
+</div>
+</div>
+</section>
+</main>
+<!-- Footer Component from JSON -->
+<footer class="bg-surface-container-lowest dark:bg-inverse-surface w-full py-12 border-t border-outline-variant dark:border-outline shadow-sm">
+<div class="max-w-container-max mx-auto px-margin-desktop flex flex-col md:flex-row justify-between items-center">
+<div class="mb-6 md:mb-0 text-center md:text-left">
+<span class="font-headline-md text-headline-md text-on-surface dark:text-inverse-on-surface font-extrabold block mb-2">UDGAM.ai</span>
+<p class="font-label-sm text-label-sm text-on-surface-variant dark:text-surface-variant opacity-80 hover:opacity-100 transition-opacity">
+                    © 2024 UDGAM.ai - Empowering Indian Agriculture
+                </p>
+</div>
+<div class="flex flex-wrap justify-center gap-6">
+<a class="font-label-sm text-label-sm text-on-surface-variant dark:text-surface-variant hover:text-primary hover:underline transition-all opacity-80 hover:opacity-100" href="#">About Us</a>
+<a class="font-label-sm text-label-sm text-on-surface-variant dark:text-surface-variant hover:text-primary hover:underline transition-all opacity-80 hover:opacity-100" href="#">Contact</a>
+<a class="font-label-sm text-label-sm text-on-surface-variant dark:text-surface-variant hover:text-primary hover:underline transition-all opacity-80 hover:opacity-100" href="#">Privacy Policy</a>
+<a class="font-label-sm text-label-sm text-on-surface-variant dark:text-surface-variant hover:text-primary hover:underline transition-all opacity-80 hover:opacity-100" href="#">Terms of Service</a>
+</div>
+</div>
+</footer>
+</body></html>

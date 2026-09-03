@@ -1,0 +1,18 @@
+fastapi==0.115.6
+uvicorn[standard]==0.34.0
+pydantic==2.10.4
+pydantic-settings==2.7.1
+python-dotenv==1.0.1
+supabase==2.11.0
+httpx==0.28.1
+PyJWT==2.10.1
+bcrypt==4.2.1
+python-multipart==0.0.20
+
+# dev
+pytest==8.3.4
+pytest-asyncio==0.25.0
+
+# cv
+opencv-python-headless==4.11.0.86
+numpy==2.2.3

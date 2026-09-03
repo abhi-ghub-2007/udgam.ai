@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>UDGAM.ai - Live Tracking</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              "colors": {
+                      "error": "#ba1a1a",
+                      "on-primary": "#ffffff",
+                      "on-tertiary-container": "#b8e2d6",
+                      "surface-container-highest": "#e4e2dd",
+                      "on-surface": "#1b1c19",
+                      "on-surface-variant": "#404943",
+                      "secondary-fixed": "#ffddb4",
+                      "secondary": "#835500",
+                      "outline": "#707973",
+                      "inverse-on-surface": "#f2f1eb",
+                      "surface-container-high": "#e9e8e3",
+                      "on-tertiary-fixed-variant": "#274e45",
+                      "surface-variant": "#e4e2dd",
+                      "error-container": "#ffdad6",
+                      "primary": "#0f5238",
+                      "on-secondary-fixed": "#291800",
+                      "on-secondary": "#ffffff",
+                      "outline-variant": "#bfc9c1",
+                      "primary-fixed-dim": "#95d4b3",
+                      "on-secondary-fixed-variant": "#633f00",
+                      "surface-container-lowest": "#ffffff",
+                      "on-secondary-container": "#734a00",
+                      "surface-tint": "#2c694e",
+                      "on-tertiary": "#ffffff",
+                      "surface-container-low": "#f5f4ee",
+                      "inverse-surface": "#30312d",
+                      "on-background": "#1b1c19",
+                      "tertiary-fixed": "#c1ebdf",
+                      "primary-fixed": "#b1f0ce",
+                      "surface": "#fbf9f4",
+                      "surface-container": "#efeee8",
+                      "tertiary-container": "#3f665d",
+                      "inverse-primary": "#95d4b3",
+                      "on-primary-container": "#a8e7c5",
+                      "background": "#fbf9f4",
+                      "surface-dim": "#dbdad5",
+                      "tertiary-fixed-dim": "#a6cfc3",
+                      "on-error": "#ffffff",
+                      "on-tertiary-fixed": "#00201a",
+                      "secondary-container": "#feb956",
+                      "secondary-fixed-dim": "#feb956",
+                      "on-error-container": "#93000a",
+                      "on-primary-fixed": "#002114",
+                      "tertiary": "#274e45",
+                      "on-primary-fixed-variant": "#0e5138",
+                      "primary-container": "#2d6a4f",
+                      "surface-bright": "#fbf9f4"
+              },
+              "borderRadius": {
+                      "DEFAULT": "0.25rem",
+                      "lg": "0.5rem",
+                      "xl": "0.75rem",
+                      "full": "9999px"
+              },
+              "spacing": {
+                      "gutter": "16px",
+                      "lg": "24px",
+                      "touch-target-large": "52px",
+                      "xs": "4px",
+                      "md": "16px",
+                      "sm": "8px",
+                      "unit": "4px",
+                      "touch-target-min": "48px",
+                      "xl": "32px"
+              },
+              "fontFamily": {
+                      "body-bold": [
+                              "\"-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Noto Sans Devanagari', sans-serif\""
+                      ],
+                      "label-caps": [
+                              "\"-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Noto Sans Devanagari', sans-serif\""
+                      ],
+                      "body-base": [
+                              "\"-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Noto Sans Devanagari', sans-serif\""
+                      ],
+                      "headline-md": [
+                              "\"-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Noto Sans Devanagari', sans-serif\""
+                      ],
+                      "display-lg": [
+                              "\"-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Noto Sans Devanagari', sans-serif\""
+                      ],
+                      "stat-lg": [
+                              "\"-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Noto Sans Devanagari', sans-serif\""
+                      ],
+                      "headline-sm": [
+                              "\"-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Noto Sans Devanagari', sans-serif\""
+                      ]
+              },
+              "fontSize": {
+                      "body-bold": [
+                              "16px",
+                              {
+                                      "lineHeight": "26px",
+                                      "fontWeight": "600"
+                              }
+                      ],
+                      "label-caps": [
+                              "14px",
+                              {
+                                      "lineHeight": "22px",
+                                      "letterSpacing": "0.04em",
+                                      "fontWeight": "700"
+                              }
+                      ],
+                      "body-base": [
+                              "16px",
+                              {
+                                      "lineHeight": "26px",
+                                      "fontWeight": "400"
+                              }
+                      ],
+                      "headline-md": [
+                              "24px",
+                              {
+                                      "lineHeight": "36px",
+                                      "fontWeight": "700"
+                              }
+                      ],
+                      "display-lg": [
+                              "32px",
+                              {
+                                      "lineHeight": "48px",
+                                      "letterSpacing": "-0.02em",
+                                      "fontWeight": "700"
+                              }
+                      ],
+                      "stat-lg": [
+                              "28px",
+                              {
+                                      "lineHeight": "42px",
+                                      "fontWeight": "700"
+                              }
+                      ],
+                      "headline-sm": [
+                              "20px",
+                              {
+                                      "lineHeight": "30px",
+                                      "fontWeight": "600"
+                              }
+                      ]
+              }
+      },
+          },
+        }
+      </script>
+<style>
+        .map-container {
+            height: 40vh;
+            min-height: 250px;
+        }
+        .pulse-ring {
+            animation: pulse-ring 2s cubic-bezier(0.215, 0.61, 0.355, 1) infinite;
+        }
+        @keyframes pulse-ring {
+            0% { transform: scale(0.8); opacity: 0.5; }
+            80% { transform: scale(1.5); opacity: 0; }
+            100% { transform: scale(0.8); opacity: 0; }
+        }
+    </style>
+</head>
+<body class="bg-background text-on-background font-body-base antialiased pb-24">
+<!-- TopAppBar -->
+<header class="bg-surface dark:bg-surface-dim docked full-width top-0 border-b-[1.5px] border-outline-variant flat no shadows">
+<div class="flex justify-between items-center w-full px-gutter h-touch-target-large">
+<button aria-label="Language" class="scale-98 active:opacity-80 transition-transform p-2 rounded-full hover:bg-surface-container-low transition-colors">
+<span aria-hidden="true" class="material-symbols-outlined text-primary dark:text-primary-fixed-dim" data-icon="language">language</span>
+</button>
+<h1 class="text-headline-md font-headline-md font-black text-primary dark:text-primary-fixed">UDGAM.ai</h1>
+<button aria-label="Notifications" class="scale-98 active:opacity-80 transition-transform p-2 rounded-full hover:bg-surface-container-low transition-colors">
+<span aria-hidden="true" class="material-symbols-outlined text-primary dark:text-primary-fixed-dim" data-icon="notifications">notifications</span>
+</button>
+</div>
+</header>
+<main class="flex flex-col h-full w-full max-w-3xl mx-auto md:mt-md bg-surface-container-lowest md:rounded-xl md:shadow-sm md:border-[1.5px] md:border-outline-variant overflow-hidden">
+<!-- Map View Area -->
+<div class="map-container relative w-full bg-surface-variant flex-shrink-0">
+<!-- Simulated Map Image -->
+<div class="w-full h-full bg-cover bg-center absolute inset-0" data-alt="A detailed, high-contrast, stylized vector map showing a route between a rural farm area and an urban market (Mandi). The map uses a light mode aesthetic with earthy greens, warm amber accents, and crisp white roads. The style is modern, professional, and tactile, suitable for high-glare outdoor viewing. The overall mood is active and logistical." style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuBLrPipsaFS_KbZd1Q9Qn-yO15t6aJArmVcDn2Tk2oOKE3n-R0PZHlTQBjLw2olX5UTsG42sQCiGPNml86APXKlT1qAUkCZe6hlZk_w2lyDaz-j4mDkGqwxD643n4hujVGIt4SHOsVqvBi7zIoQum_5cV390de7IY9oyZqvu55v1bjUzCu1hqhUbi_gYav40Ovgb71DQniUU_ep8_xwrGWgd6BPg0LG7g_1J5go1K1DIvEPBj2Hn5ks')"></div>
+<!-- Route Overlay -->
+<div class="absolute inset-0 p-lg pointer-events-none flex flex-col justify-between">
+<!-- Farm Marker -->
+<div class="flex items-center absolute top-[20%] left-[10%]">
+<div class="w-4 h-4 rounded-full bg-primary border-2 border-white shadow-sm z-10"></div>
+<span class="ml-2 px-2 py-1 bg-white/90 backdrop-blur-sm rounded-md text-label-caps font-label-caps text-on-surface shadow-sm border border-outline-variant">Farm</span>
+</div>
+<!-- Route Line (SVG Simulation) -->
+<svg class="absolute inset-0 w-full h-full" style="z-index: 5;">
+<path d="M 15% 22% Q 40% 50% 60% 30% T 85% 75%" fill="none" stroke="#0f5238" stroke-dasharray="8 4" stroke-linecap="round" stroke-width="4"></path>
+</svg>
+<!-- Truck Marker (Current Location) -->
+<div class="absolute top-[35%] left-[55%] flex flex-col items-center -translate-x-1/2 -translate-y-1/2 z-20">
+<div class="relative">
+<div class="w-12 h-12 bg-primary rounded-full flex items-center justify-center text-white shadow-md relative z-10">
+<span class="material-symbols-outlined" data-icon="local_shipping" style="font-variation-settings: 'FILL' 1;">local_shipping</span>
+</div>
+<div class="absolute inset-0 rounded-full border-4 border-primary/30 pulse-ring"></div>
+</div>
+<span class="mt-1 px-2 py-0.5 bg-secondary-container text-on-secondary-container text-label-caps font-label-caps rounded-md shadow-sm">In Transit</span>
+</div>
+<!-- Mandi Marker -->
+<div class="flex items-center absolute top-[75%] left-[85%] -translate-x-full">
+<span class="mr-2 px-2 py-1 bg-white/90 backdrop-blur-sm rounded-md text-label-caps font-label-caps text-on-surface shadow-sm border border-outline-variant">Mandi</span>
+<div class="w-4 h-4 rounded-full bg-error border-2 border-white shadow-sm z-10"></div>
+</div>
+</div>
+</div>
+<!-- Order Detail & Timeline Area -->
+<div class="p-gutter flex-1 flex flex-col gap-lg bg-surface-container-lowest z-10 -mt-4 rounded-t-xl md:-mt-0 md:rounded-t-none">
+<!-- Order Header Card -->
+<div class="bg-surface p-md rounded-lg border-[1.5px] border-outline-variant shadow-sm flex flex-col gap-sm">
+<div class="flex justify-between items-start">
+<div>
+<h2 class="text-headline-sm font-headline-sm text-on-surface">Order #ORD-7892</h2>
+<p class="text-body-base font-body-base text-on-surface-variant mt-1">Reliance Retail • Mandi A</p>
+</div>
+<div class="px-3 py-1 bg-primary-container/10 text-primary-container rounded-full border border-primary-container/20">
+<span class="text-label-caps font-label-caps">LIVE</span>
+</div>
+</div>
+<div class="h-[1px] w-full bg-outline-variant/50 my-2"></div>
+<div class="flex items-center gap-md">
+<div class="w-16 h-16 rounded-md overflow-hidden border-[1.5px] border-outline-variant flex-shrink-0">
+<div class="w-full h-full bg-cover bg-center" data-alt="A close-up, high-quality, brightly lit photograph of fresh red onions in a rustic wooden crate or burlap sack. The lighting is natural and crisp, highlighting the textures of the onion skins. The background is slightly blurred but suggests an agricultural setting. The aesthetic is clean, professional, and focuses on the quality of the produce." style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuAtrI9Szz0U82ZoFx9qMYG7oNUpO1yx2B7qmbV5O3SjVXNWisUKkj7auKngMpYL1cEGtcPiau-HkDNq7UugZNfHATODl6TpP0h1zsqdq-_mV7TKCsU-AXV79rysU3YWOkY3zd0ZsvZhuYw3yRk944H4PTqysP_5oVRvor4QmmZFDCDQzwLlNg9jYGOem3Ycv-FGcejyWkrGvuVaCqZ5dBWGxscQBPfl5R4G4oO_UXFVDWuObom6JgIS')"></div>
+</div>
+<div class="flex flex-col">
+<span class="text-body-bold font-body-bold text-on-surface">Red Onions (Grade A)</span>
+<div class="flex items-center gap-xs text-on-surface-variant mt-1">
+<span class="material-symbols-outlined text-[18px]" data-icon="scale">scale</span>
+<span class="text-body-base font-body-base">500 kg</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Vertical Timeline -->
+<div class="flex-1 flex flex-col gap-0 relative pl-4">
+<!-- Timeline Line -->
+<div class="absolute left-[27px] top-4 bottom-8 w-[2px] bg-outline-variant z-0"></div>
+<!-- Step 1: Order Placed -->
+<div class="flex gap-md items-start relative z-10 py-sm">
+<div class="w-7 h-7 rounded-full bg-primary flex items-center justify-center text-white flex-shrink-0 border-2 border-surface-container-lowest mt-1">
+<span class="material-symbols-outlined text-[16px]" data-icon="check" style="font-variation-settings: 'FILL' 1;">check</span>
+</div>
+<div class="flex flex-col">
+<span class="text-body-bold font-body-bold text-on-surface">Order Placed</span>
+<span class="text-label-caps font-label-caps text-on-surface-variant">08:30 AM, Today</span>
+</div>
+</div>
+<!-- Step 2: Loaded -->
+<div class="flex gap-md items-start relative z-10 py-sm">
+<div class="w-7 h-7 rounded-full bg-primary flex items-center justify-center text-white flex-shrink-0 border-2 border-surface-container-lowest mt-1">
+<span class="material-symbols-outlined text-[16px]" data-icon="check" style="font-variation-settings: 'FILL' 1;">check</span>
+</div>
+<div class="flex flex-col">
+<span class="text-body-bold font-body-bold text-on-surface">Loaded at Farm</span>
+<span class="text-label-caps font-label-caps text-on-surface-variant">09:45 AM, Today</span>
+</div>
+</div>
+<!-- Step 3: In Transit (Current) -->
+<div class="flex gap-md items-start relative z-10 py-sm">
+<div class="relative flex-shrink-0 mt-1">
+<div class="w-7 h-7 rounded-full bg-secondary-container flex items-center justify-center text-on-secondary-container border-2 border-surface-container-lowest relative z-10">
+<div class="w-2.5 h-2.5 rounded-full bg-secondary"></div>
+</div>
+<div class="absolute inset-0 rounded-full border-[3px] border-secondary-container/50 pulse-ring"></div>
+</div>
+<div class="flex flex-col">
+<span class="text-body-bold font-body-bold text-primary font-bold">In Transit</span>
+<span class="text-label-caps font-label-caps text-on-surface-variant">Est. Arrival: 11:30 AM</span>
+</div>
+</div>
+<!-- Step 4: Delivered -->
+<div class="flex gap-md items-start relative z-10 py-sm">
+<div class="w-7 h-7 rounded-full bg-surface-container-high border-2 border-outline-variant flex items-center justify-center text-outline flex-shrink-0 mt-1">
+<div class="w-2 h-2 rounded-full bg-outline-variant"></div>
+</div>
+<div class="flex flex-col opacity-60">
+<span class="text-body-bold font-body-bold text-on-surface">Delivered to Mandi</span>
+<span class="text-label-caps font-label-caps text-on-surface-variant">Pending</span>
+</div>
+</div>
+</div>
+<!-- Action Button -->
+<div class="mt-auto pt-md pb-md">
+<button class="w-full h-touch-target-large bg-primary text-white rounded-lg flex items-center justify-center gap-sm active:scale-98 transition-transform shadow-sm">
+<span class="material-symbols-outlined" data-icon="call" style="font-variation-settings: 'FILL' 1;">call</span>
+<span class="text-body-bold font-body-bold">Call Transporter</span>
+</button>
+</div>
+</div>
+</main>
+<!-- BottomNavBar -->
+<nav class="fixed bottom-0 w-full z-50 rounded-t-xl border-t-[1.5px] border-outline-variant shadow-lg bg-surface dark:bg-surface-dim md:hidden block">
+<div class="flex justify-around items-center h-[64px] bg-surface w-full">
+<a class="flex flex-col items-center justify-center text-on-surface-variant pt-2 w-full h-full hover:bg-surface-container-high scale-95 transition-all duration-150 group" href="#">
+<span class="material-symbols-outlined mb-1 group-hover:text-primary transition-colors" data-icon="dashboard">dashboard</span>
+<span class="text-label-caps font-label-caps text-center">Home</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant pt-2 w-full h-full hover:bg-surface-container-high scale-95 transition-all duration-150 group" href="#">
+<span class="material-symbols-outlined mb-1 group-hover:text-primary transition-colors" data-icon="pending_actions">pending_actions</span>
+<span class="text-label-caps font-label-caps text-center">Work</span>
+</a>
+<a class="flex flex-col items-center justify-center text-primary border-t-4 border-primary pt-1 w-full h-full bg-surface-container-low scale-95 transition-all duration-150" href="#">
+<span class="material-symbols-outlined mb-1 font-bold" data-icon="shopping_bag" style="font-variation-settings: 'FILL' 1;">shopping_bag</span>
+<span class="text-label-caps font-label-caps text-center font-bold">Orders</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant pt-2 w-full h-full hover:bg-surface-container-high scale-95 transition-all duration-150 group" href="#">
+<span class="material-symbols-outlined mb-1 group-hover:text-primary transition-colors" data-icon="headset_mic">headset_mic</span>
+<span class="text-label-caps font-label-caps text-center">Support</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant pt-2 w-full h-full hover:bg-surface-container-high scale-95 transition-all duration-150 group" href="#">
+<span class="material-symbols-outlined mb-1 group-hover:text-primary transition-colors" data-icon="mic">mic</span>
+<span class="text-label-caps font-label-caps text-center">Voice</span>
+</a>
+</div>
+</nav>
+</body></html>

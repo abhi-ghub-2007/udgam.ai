@@ -1,0 +1,32 @@
+# ---- Secrets: never commit ----
+.env
+.env.*
+!.env.example
+
+# ---- Python ----
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+backend/.venv/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# ---- Models / large artifacts ----
+backend/models/*.joblib
+backend/models/*.pkl
+!backend/models/.gitkeep
+
+# ---- OS / editor ----
+.vs/
+.vscode/
+.idea/
+Thumbs.db
+desktop.ini
+*.swp
+
+# ---- Logs / scratch ----
+*.log
+scratch/

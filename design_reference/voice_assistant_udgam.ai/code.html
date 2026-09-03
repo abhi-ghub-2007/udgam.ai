@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Voice Assistant Overlay</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=-apple-system,+BlinkMacSystemFont,+'Segoe+UI',+Roboto,+'Noto+Sans+Devanagari',+sans-serif:wght@100..900&display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "error": "#ba1a1a",
+                        "on-primary": "#ffffff",
+                        "on-tertiary-container": "#b8e2d6",
+                        "surface-container-highest": "#e4e2dd",
+                        "on-surface": "#1b1c19",
+                        "on-surface-variant": "#404943",
+                        "secondary-fixed": "#ffddb4",
+                        "secondary": "#835500",
+                        "outline": "#707973",
+                        "inverse-on-surface": "#f2f1eb",
+                        "surface-container-high": "#e9e8e3",
+                        "on-tertiary-fixed-variant": "#274e45",
+                        "surface-variant": "#e4e2dd",
+                        "error-container": "#ffdad6",
+                        "primary": "#0f5238",
+                        "on-secondary-fixed": "#291800",
+                        "on-secondary": "#ffffff",
+                        "outline-variant": "#bfc9c1",
+                        "primary-fixed-dim": "#95d4b3",
+                        "on-secondary-fixed-variant": "#633f00",
+                        "surface-container-lowest": "#ffffff",
+                        "on-secondary-container": "#734a00",
+                        "surface-tint": "#2c694e",
+                        "on-tertiary": "#ffffff",
+                        "surface-container-low": "#f5f4ee",
+                        "inverse-surface": "#30312d",
+                        "on-background": "#1b1c19",
+                        "tertiary-fixed": "#c1ebdf",
+                        "primary-fixed": "#b1f0ce",
+                        "surface": "#fbf9f4",
+                        "surface-container": "#efeee8",
+                        "tertiary-container": "#3f665d",
+                        "inverse-primary": "#95d4b3",
+                        "on-primary-container": "#a8e7c5",
+                        "background": "#fbf9f4",
+                        "surface-dim": "#dbdad5",
+                        "tertiary-fixed-dim": "#a6cfc3",
+                        "on-error": "#ffffff",
+                        "on-tertiary-fixed": "#00201a",
+                        "secondary-container": "#feb956",
+                        "secondary-fixed-dim": "#feb956",
+                        "on-error-container": "#93000a",
+                        "on-primary-fixed": "#002114",
+                        "tertiary": "#274e45",
+                        "on-primary-fixed-variant": "#0e5138",
+                        "primary-container": "#2d6a4f",
+                        "surface-bright": "#fbf9f4"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "gutter": "16px",
+                        "lg": "24px",
+                        "touch-target-large": "52px",
+                        "xs": "4px",
+                        "md": "16px",
+                        "sm": "8px",
+                        "unit": "4px",
+                        "touch-target-min": "48px",
+                        "xl": "32px"
+                    },
+                    "fontFamily": {
+                        "body-bold": ["\"-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Noto Sans Devanagari', sans-serif\""],
+                        "label-caps": ["\"-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Noto Sans Devanagari', sans-serif\""],
+                        "body-base": ["\"-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Noto Sans Devanagari', sans-serif\""],
+                        "headline-md": ["\"-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Noto Sans Devanagari', sans-serif\""],
+                        "display-lg": ["\"-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Noto Sans Devanagari', sans-serif\""],
+                        "stat-lg": ["\"-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Noto Sans Devanagari', sans-serif\""],
+                        "headline-sm": ["\"-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Noto Sans Devanagari', sans-serif\""]
+                    },
+                    "fontSize": {
+                        "body-bold": ["16px", { "lineHeight": "26px", "fontWeight": "600" }],
+                        "label-caps": ["14px", { "lineHeight": "22px", "letterSpacing": "0.04em", "fontWeight": "700" }],
+                        "body-base": ["16px", { "lineHeight": "26px", "fontWeight": "400" }],
+                        "headline-md": ["24px", { "lineHeight": "36px", "fontWeight": "700" }],
+                        "display-lg": ["32px", { "lineHeight": "48px", "letterSpacing": "-0.02em", "fontWeight": "700" }],
+                        "stat-lg": ["28px", { "lineHeight": "42px", "fontWeight": "700" }],
+                        "headline-sm": ["20px", { "lineHeight": "30px", "fontWeight": "600" }]
+                    },
+                    "animation": {
+                        'pulse-glow': 'pulseGlow 2s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+                    },
+                    "keyframes": {
+                        pulseGlow: {
+                            '0%, 100%': { opacity: '1', transform: 'scale(1)', boxShadow: '0 0 0 0 rgba(254, 185, 86, 0.7)' },
+                            '50%': { opacity: '.8', transform: 'scale(1.05)', boxShadow: '0 0 0 20px rgba(254, 185, 86, 0)' },
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        .backdrop-blur-sm {
+            backdrop-filter: blur(4px);
+        }
+    </style>
+</head>
+<body class="bg-background text-on-background h-screen w-screen overflow-hidden flex flex-col relative font-body-base">
+<!-- Simulated Dashboard Background (Blurred out by overlay) -->
+<div aria-hidden="true" class="absolute inset-0 z-0 opacity-30 flex flex-col pointer-events-none p-gutter gap-md">
+<!-- Mock TopAppBar -->
+<header class="flex justify-between items-center w-full h-touch-target-large border-b-[1.5px] border-outline-variant bg-surface px-gutter">
+<span class="material-symbols-outlined text-primary">language</span>
+<span class="text-headline-sm font-headline-sm font-black text-primary">UDGAM.ai</span>
+<span class="material-symbols-outlined text-primary">notifications</span>
+</header>
+<div class="flex-1 grid grid-cols-2 gap-md opacity-50">
+<div class="bg-surface border-[1.5px] border-outline-variant rounded-lg p-md">
+<div class="w-full h-24 bg-surface-container-high rounded mb-sm"></div>
+<div class="h-4 bg-outline-variant rounded w-3/4 mb-xs"></div>
+<div class="h-4 bg-outline-variant rounded w-1/2"></div>
+</div>
+<div class="bg-surface border-[1.5px] border-outline-variant rounded-lg p-md">
+<div class="w-full h-24 bg-surface-container-high rounded mb-sm"></div>
+<div class="h-4 bg-outline-variant rounded w-3/4 mb-xs"></div>
+<div class="h-4 bg-outline-variant rounded w-1/2"></div>
+</div>
+<div class="bg-surface border-[1.5px] border-outline-variant rounded-lg p-md">
+<div class="w-full h-24 bg-surface-container-high rounded mb-sm"></div>
+<div class="h-4 bg-outline-variant rounded w-3/4 mb-xs"></div>
+<div class="h-4 bg-outline-variant rounded w-1/2"></div>
+</div>
+<div class="bg-surface border-[1.5px] border-outline-variant rounded-lg p-md">
+<div class="w-full h-24 bg-surface-container-high rounded mb-sm"></div>
+<div class="h-4 bg-outline-variant rounded w-3/4 mb-xs"></div>
+<div class="h-4 bg-outline-variant rounded w-1/2"></div>
+</div>
+</div>
+</div>
+<!-- Semi-transparent Dark Overlay -->
+<div class="absolute inset-0 z-40 bg-on-background/80 backdrop-blur-sm flex flex-col justify-between p-gutter transition-opacity duration-300">
+<!-- Top Section: Close & Multilingual Toggle -->
+<div class="flex justify-between items-center w-full pt-sm">
+<button aria-label="Close Voice Assistant" class="h-touch-target-min w-touch-target-min flex items-center justify-center rounded-full bg-surface-container-highest text-on-surface hover:bg-surface-variant transition-colors">
+<span class="material-symbols-outlined text-headline-md font-headline-md">close</span>
+</button>
+<div class="flex items-center gap-sm bg-surface-container-highest rounded-full px-md py-xs h-touch-target-min">
+<span class="material-symbols-outlined text-on-surface text-body-bold">translate</span>
+<span class="text-body-bold font-body-bold text-on-surface">English / हिंदी</span>
+<span class="material-symbols-outlined text-on-surface text-body-base">arrow_drop_down</span>
+</div>
+</div>
+<!-- Center Section: Assistant Speech & Mic -->
+<div class="flex flex-col items-center justify-center flex-1 w-full max-w-md mx-auto space-y-xl">
+<!-- Assistant Speech Bubble -->
+<div class="bg-surface text-on-surface p-lg rounded-2xl rounded-bl-none shadow-lg max-w-[85%] border-[1.5px] border-outline-variant relative">
+<p class="text-headline-sm font-headline-sm text-center">
+                    "Namaste! How can I help you sell your produce today?"
+                </p>
+<!-- Tail for speech bubble -->
+<div class="absolute -bottom-[10px] left-0 w-0 h-0 border-t-[10px] border-t-surface border-r-[15px] border-r-transparent border-l-0 border-solid z-10"></div>
+<div class="absolute -bottom-[12px] -left-[1.5px] w-0 h-0 border-t-[12px] border-t-outline-variant border-r-[17px] border-r-transparent border-l-0 border-solid z-0"></div>
+</div>
+<!-- Central Pulsing Mic -->
+<div class="flex flex-col items-center space-y-md mt-lg">
+<button aria-label="Microphone Listening" class="w-[120px] h-[120px] rounded-full bg-secondary-container text-on-secondary-container flex items-center justify-center shadow-lg animate-pulse-glow hover:scale-105 active:scale-95 transition-transform">
+<span class="material-symbols-outlined text-[64px]" style="font-variation-settings: 'FILL' 1;">mic</span>
+</button>
+<p class="text-body-bold font-body-bold text-surface-container-lowest animate-pulse">
+                    Listening...
+                </p>
+</div>
+</div>
+<!-- Bottom Section: Quick Chips -->
+<div class="w-full pb-xl">
+<p class="text-body-base font-body-base text-surface-container-lowest mb-sm text-center opacity-80">Try asking:</p>
+<div class="flex flex-wrap justify-center gap-sm">
+<button class="h-touch-target-min px-md bg-surface text-on-surface rounded-full border-[1.5px] border-outline-variant flex items-center gap-xs hover:bg-surface-container-low active:bg-surface-variant transition-colors">
+<span class="material-symbols-outlined text-body-bold">trending_up</span>
+<span class="text-body-bold font-body-bold whitespace-nowrap">Check market prices</span>
+</button>
+<button class="h-touch-target-min px-md bg-surface text-on-surface rounded-full border-[1.5px] border-outline-variant flex items-center gap-xs hover:bg-surface-container-low active:bg-surface-variant transition-colors">
+<span class="material-symbols-outlined text-body-bold">add_box</span>
+<span class="text-body-bold font-body-bold whitespace-nowrap">List new crop</span>
+</button>
+<button class="h-touch-target-min px-md bg-surface text-on-surface rounded-full border-[1.5px] border-outline-variant flex items-center gap-xs hover:bg-surface-container-low active:bg-surface-variant transition-colors">
+<span class="material-symbols-outlined text-body-bold">local_shipping</span>
+<span class="text-body-bold font-body-bold whitespace-nowrap">Track my truck</span>
+</button>
+</div>
+</div>
+</div>
+</body></html>
