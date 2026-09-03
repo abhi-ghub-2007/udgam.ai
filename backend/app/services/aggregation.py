@@ -15,16 +15,17 @@ reserves, never assigns, and never mutates a listing. The lifecycle is
 
     suggested -> farmer consent (per line) -> buyer confirmation -> reserved
 
-and inventory moves at exactly one point: routers/aggregations.py decrements
-products.available_quantity_kg when the buyer confirms, and only for lines the
-farmer already accepted. Everything here is pure selection over rows handed in.
+and a farmer's listing is never written at any point in it. Everything here is
+pure selection over rows handed in.
 
 DOUBLE COUNTING
 ---------------
-The selector is told how much of each lot is already spoken for by other live
-aggregations and subtracts that before considering it, so the same kilo is never
-offered to two buyers. The confirm step re-checks availability inside the write
-path, because a suggestion computed a minute ago is not proof of anything.
+Reservation is derived, not stored on the listing: a live group's own
+aggregation_items rows ARE its claim. routers/aggregations.py subtracts those
+claims wherever availability is computed, so the same kilo is never offered to
+two buyers, and confirm() re-checks against that ledger because a suggestion
+computed a minute ago is not proof of anything. products.available_quantity_kg
+belongs to the farmer and stays exactly as they wrote it.
 
 NEUTRALITY
 ----------
@@ -39,6 +40,7 @@ from dataclasses import dataclass, field
 from datetime import date
 
 from . import market_data as md
+from . import orchestration
 
 METHOD = "ALGORITHMIC"
 
@@ -112,6 +114,7 @@ class Proposal:
             "grade_variance_warning": self.grade_variance_warning,
             "method": self.method,
             "assumptions": ASSUMPTIONS,
+            "neutrality": orchestration.disclosure(orchestration.AGGREGATION_POLICY),
             "items": [
                 {
                     "product_id": i.product_id,

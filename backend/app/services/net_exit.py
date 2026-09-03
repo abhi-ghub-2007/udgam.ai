@@ -35,6 +35,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from datetime import date
 
+from . import orchestration
 from .opportunity import CostLine, Opportunity
 from .pricing import PLATFORM_FEE_BPS, compute_breakdown
 
@@ -460,15 +461,17 @@ def rank(opportunities: list[Opportunity], *, by: str = "net") -> dict:
                 else f"ties with {nxt.reference_name} on net realization"
             )
 
+    policy = (orchestration.SALE_WINDOW_POLICY if by == "risk_adjusted"
+              else orchestration.NET_EXIT_POLICY)
     best = comparable[0] if comparable else None
     return {
         "best": best,
         "ranked": comparable,
         "excluded": excluded,
-        "ranked_by": (
-            "risk_adjusted_paise desc, then distance_km asc" if by == "risk_adjusted"
-            else "expected_farmer_net_realization_paise desc, then distance_km asc"
-        ),
+        "ranked_by": policy.describe(),
         "method": "ALGORITHMIC",
         "assumptions": ASSUMPTIONS,
+        # Feature 5: the ordering contract travels with every ranked response,
+        # so a reader can audit the neutrality claim rather than take it on faith.
+        "neutrality": orchestration.disclosure(policy),
     }

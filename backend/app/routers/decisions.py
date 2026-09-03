@@ -22,6 +22,7 @@ from fastapi import APIRouter, Depends
 from ..deps import CurrentUserDep, require_role
 from ..errors import Forbidden, NotFound
 from ..services import market_data as md
+from ..services import emergency_exit as emergency
 from ..services import net_exit, sale_window
 from ..services.opportunity import Opportunity
 
@@ -32,6 +33,16 @@ require_farmer = Depends(require_role("farmer"))
 # A lot is compared against at most this many mandi markets, nearest first, to
 # keep one request bounded regardless of how many districts hold price data.
 _MAX_MARKETS = 8
+
+
+def _uuid_or_404(value: str, message: str) -> str:
+    """Postgres rejects a malformed uuid with 22P02, which would surface as a
+    bare 500 INTERNAL. A bad id is a caller mistake, so answer it as one."""
+    try:
+        uuid.UUID(str(value))
+    except (ValueError, AttributeError, TypeError):
+        raise NotFound(message)
+    return str(value)
 
 
 def _payment_reliability(buyer: dict | None) -> tuple[float | None, str]:
@@ -289,4 +300,123 @@ async def sale_window_options(user: CurrentUserDep, product_id: str,
         "method": result["method"],
         "assumptions": result["assumptions"],
         "availability": "ok" if result["best"] else "insufficient_data",
+    }
+
+
+@router.get("/emergency-exit", dependencies=[require_farmer])
+async def emergency_exit(user: CurrentUserDep, order_id: str):
+    """Find a new home for a lot stranded by a cancelled or disputed order.
+
+    Read-only by design (Feature 4): the original order, its history and its
+    state machine are untouched. This returns ranked alternatives and waits to
+    be told — acting on one goes through the existing order endpoints with the
+    farmer's explicit confirmation.
+
+    Alternatives are ranked by net_exit.rank(), the same model a routine sale
+    uses, so nothing gets preferential treatment for being an emergency.
+    """
+    db = user.db
+    oid = _uuid_or_404(order_id, "That order does not exist.")
+
+    rows = (db.table("orders").select("*").eq("id", oid).limit(1).execute()).data
+    if not rows:
+        raise NotFound("That order does not exist.")
+    order = rows[0]
+
+    items = (db.table("order_items").select("*").eq("order_id", oid).execute()).data or []
+    if str(order.get("farmer_id") or "") != str(user.id) and \
+            not any(str(i.get("farmer_id")) == str(user.id) for i in items):
+        raise Forbidden("That order is not yours.")
+
+    # Only this farmer's share of a possibly-aggregated order is theirs to re-exit.
+    mine = [i for i in items if str(i.get("farmer_id")) == str(user.id)] or items
+
+    crop_id = next((str(i["crop_id"]) for i in mine if i.get("crop_id")), None)
+    crop = {}
+    if crop_id:
+        got = (db.table("crops")
+               .select("id, code, name_en, category, default_shelf_life_days")
+               .eq("id", crop_id).limit(1).execute()).data
+        crop = got[0] if got else {}
+
+    shipment = None
+    ship = (db.table("shipments").select("id, status")
+            .eq("order_id", oid).order("created_at", desc=True)
+            .limit(1).execute()).data
+    if ship:
+        shipment = ship[0]
+
+    disruption = emergency.classify(
+        order=order, items=mine, shipment=shipment,
+        shelf_life_days=crop.get("default_shelf_life_days"),
+    )
+    if disruption is None:
+        return {
+            "order_id": oid,
+            "disrupted": False,
+            "status": order.get("status"),
+            "message": "This order is progressing normally; no alternative exit is needed.",
+            "original_order_untouched": True,
+        }
+
+    # Rebuild the stranded lot as a pseudo-listing so the SAME optimizer runs.
+    stranded = {
+        "id": None,
+        "farmer_id": str(user.id),
+        "crop_id": crop_id,
+        "quantity_kg": disruption.stranded_kg,
+        "available_quantity_kg": disruption.stranded_kg,
+        "asking_price_paise": next(
+            (int(i["unit_price_paise"]) for i in mine if i.get("unit_price_paise")), 0),
+        "grade": disruption.grade,
+        "district": (db.table("profiles").select("district").eq("id", user.id)
+                     .limit(1).execute().data or [{}])[0].get("district"),
+    }
+    origin = stranded["district"]
+    capacities = _posted_capacity(db)
+
+    opportunities: list[Opportunity] = []
+
+    if crop_id:
+        requests = (db.table("buyer_requests")
+                    .select("*, profiles!buyer_requests_buyer_id_fkey("
+                            "full_name, verification_status, avg_rating, rating_count)")
+                    .eq("crop_id", crop_id).eq("status", "open")
+                    .limit(50).execute()).data or []
+        for req in requests:
+            # Never propose the buyer who just walked away.
+            if str(req.get("buyer_id")) == str(order.get("buyer_id")):
+                continue
+            buyer = req.pop("profiles", None) or {}
+            reliability, basis = _payment_reliability(buyer)
+            req["buyer_name"] = buyer.get("full_name") or "Buyer requirement"
+            opportunities.append(net_exit.build_direct_buyer_opportunity(
+                product=stranded, request=req, crop=crop,
+                distance_km=md.district_distance_km(origin, req.get("delivery_district")),
+                capacities=capacities,
+                payment_reliability=reliability, payment_reliability_basis=basis,
+            ))
+
+        for district in sorted(
+            md.MARKET_DISTRICTS,
+            key=lambda d: (md.district_distance_km(origin, d) if origin else 0) or 0,
+        )[:_MAX_MARKETS]:
+            row = (db.table("prices")
+                   .select("modal_price_paise, price_date, created_at, method,"
+                           " data_source, is_prediction, horizon_days")
+                   .eq("crop_id", crop_id).eq("district", district)
+                   .eq("is_prediction", False)
+                   .order("price_date", desc=True).limit(1).execute()).data
+            price_row = row[0] if row else None
+            opportunities.append(net_exit.build_mandi_opportunity(
+                product=stranded, crop=crop, district=district, price_row=price_row,
+                distance_km=md.district_distance_km(origin, district),
+                capacities=capacities,
+                price_provenance=md.provenance(price_row) if price_row else None,
+            ))
+
+    return {
+        "order_id": oid,
+        "disrupted": True,
+        **emergency.summarise(disruption, net_exit.rank(opportunities)),
     }
