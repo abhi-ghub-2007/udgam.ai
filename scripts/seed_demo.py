@@ -6,11 +6,13 @@ the project venv:  .venv/Scripts/python.exe scripts/seed_demo.py
 from __future__ import annotations
 
 import sys
+from datetime import timedelta
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from backend.app.db.admin_client import admin_client  # noqa: E402
+from backend.app.services import market_data as md  # noqa: E402
 
 # Common Indian crops. shelf_life drives the freshness/expiry logic later.
 CROPS = [
@@ -154,6 +156,107 @@ def seed_market(ids: dict[str, str]) -> tuple[int, int]:
     return len(listings), len(requests)
 
 
+# --- SIH26132 market data spine ----------------------------------------------
+# Crops the Market Decision Center demonstrates against. Kept small on purpose:
+# 8 districts x 90 days x every crop would be ~14k rows for no demo benefit.
+MARKET_CROPS = ["TOMATO", "ONION", "POTATO", "WHEAT", "BANANA", "COTTON"]
+MARKET_HISTORY_DAYS = 90
+FORECAST_HORIZONS = (3, 7, 14)
+
+
+def seed_market_prices() -> tuple[int, int]:
+    """Generate the SYNTHETIC price spine.
+
+    Every row is written with method='SYNTHETIC' and data_source='synthetic_v1',
+    never 'agmarknet' (the column default), so nothing in this dataset can be
+    mistaken for a real mandi observation. One model_runs row records the
+    provenance of the whole generation pass.
+
+    Idempotent: the pass deletes only its own synthetic rows before rewriting,
+    so a future real-data feed writing method='REAL' rows is never touched.
+    """
+    admin = admin_client()
+
+    run = admin.table("model_runs").insert({
+        "model_name": md.SYNTHETIC_MODEL,
+        "model_version": md.SYNTHETIC_VERSION,
+        "method": "SYNTHETIC",
+        "data_source": md.SYNTHETIC_SOURCE,
+        "notes": ("Deterministic synthetic price + demand series for the SIH26132 "
+                  "demo. No Agmarknet feed and no trained model exist in this tree; "
+                  "these rows are generated and labelled SYNTHETIC end to end."),
+    }).execute().data[0]
+    run_id = run["id"]
+
+    crops = admin.table("crops").select("id, code, category").in_("code", MARKET_CROPS).execute().data
+    admin.table("prices").delete().eq("data_source", md.SYNTHETIC_SOURCE).execute()
+    admin.table("demand_forecasts").delete().eq("method", "SYNTHETIC").execute()
+
+    price_rows: list[dict] = []
+    demand_rows: list[dict] = []
+
+    for crop in crops:
+        for district, (_lat, _lon, state) in md.MARKET_DISTRICTS.items():
+            series = md.synthesize_series(
+                crop["code"], district,
+                category=crop.get("category"), days=MARKET_HISTORY_DAYS,
+            )
+            for pt in series:
+                price_rows.append({
+                    "crop_id": crop["id"], "district": district, "state": state,
+                    "price_date": pt.price_date.isoformat(),
+                    "modal_price_paise": pt.modal_price_paise,
+                    "min_price_paise": pt.min_price_paise,
+                    "max_price_paise": pt.max_price_paise,
+                    "arrival_qty_tonnes": pt.arrival_qty_tonnes,
+                    "is_prediction": False,
+                    "method": "SYNTHETIC",
+                    "data_source": md.SYNTHETIC_SOURCE,
+                    "model_run_id": run_id,
+                })
+
+            last_day = series[-1].price_date
+            for horizon in FORECAST_HORIZONS:
+                modal, low, high, conf = md.synthesize_forecast(series, horizon_days=horizon)
+                price_rows.append({
+                    "crop_id": crop["id"], "district": district, "state": state,
+                    "price_date": (last_day + timedelta(days=horizon)).isoformat(),
+                    "modal_price_paise": modal,
+                    "confidence_low_paise": low, "confidence_high_paise": high,
+                    "is_prediction": True, "horizon_days": horizon,
+                    "method": "SYNTHETIC",
+                    "data_source": md.SYNTHETIC_SOURCE,
+                    "model_run_id": run_id,
+                })
+
+            # Demand: this week's arrivals against the trailing 4-week mean.
+            recent = [p.arrival_qty_tonnes for p in series[-7:]]
+            baseline = [p.arrival_qty_tonnes for p in series[-28:]]
+            predicted = round(sum(recent) / max(1, len(recent)), 3)
+            base_avg = round(sum(baseline) / max(1, len(baseline)), 3)
+            change = round(((predicted - base_avg) / base_avg) * 100, 2) if base_avg else 0.0
+            week_start = last_day - timedelta(days=last_day.weekday())
+            demand_rows.append({
+                "crop_id": crop["id"], "district": district,
+                "forecast_week_start": week_start.isoformat(),
+                "predicted_qty_tonnes": predicted,
+                "baseline_qty_tonnes": base_avg,
+                "change_pct": change,
+                "confidence": 0.4,
+                "method": "SYNTHETIC",
+                "model_run_id": run_id,
+            })
+
+    for i in range(0, len(price_rows), 500):
+        admin.table("prices").insert(price_rows[i:i + 500]).execute()
+    admin.table("demand_forecasts").upsert(
+        demand_rows, on_conflict="crop_id,district,forecast_week_start"
+    ).execute()
+
+    admin.table("model_runs").update({"row_count": len(price_rows) + len(demand_rows)})         .eq("id", run_id).execute()
+    return len(price_rows), len(demand_rows)
+
+
 def main() -> None:
     n = seed_crops()
     total = admin_client().table("crops").select("id").execute()
@@ -164,6 +267,8 @@ def main() -> None:
 
     listings, requests = seed_market(ids)
     print(f"seeded {listings} listings + {requests} buyer requests")
+    prices, demand = seed_market_prices()
+    print(f"seeded {prices} SYNTHETIC price rows + {demand} demand forecasts")
     print(f"demo login password: {DEMO_PASSWORD}")
 
 
