@@ -11,8 +11,8 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from .config import settings
 from .errors import register_error_handlers
-from .routers import (auth, buyer_matching, dashboard, market, notifications, orders,
-                      products, profiles, transport)
+from .routers import (auth, buyer_matching, dashboard, decisions, market, notifications,
+                      orders, products, profiles, transport)
 
 logging.basicConfig(
     level=logging.INFO,
@@ -45,6 +45,7 @@ app.include_router(orders.router)
 app.include_router(transport.router)
 app.include_router(notifications.router)
 app.include_router(market.router)
+app.include_router(decisions.router)
 
 
 @app.get("/", tags=["meta"])
