@@ -9,7 +9,7 @@ import { startRouter, navigate, refresh } from './core/router.js';
 import { renderNav, mountNav } from './core/nav.js';
 import { toast } from './core/toast.js';
 import { api } from './core/api.js';
-import { registerRoutes } from './routes.js?v=3';
+import { registerRoutes } from './routes.js?v=4';
 
 const API_BASE = window.__UDGAM_API_BASE__ || 'http://127.0.0.1:8001';
 

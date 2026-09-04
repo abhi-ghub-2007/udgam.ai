@@ -301,7 +301,45 @@
     }
   },
   "market": {
-    "composite_score": "Quality Score"
+    "composite_score": "Quality Score",
+    "produce": "उपज",
+    "buyer_label": "ख़रीदार",
+    "your_payout": "आपकी राशि",
+    "plus_more_items": "+{n} और",
+    "orders_none_in_filter": "इस दृश्य में कोई ऑर्डर नहीं।",
+    "find_new_exit": "नया ख़रीदार खोजें",
+    "transport_intro": "परिवहन हर ऑर्डर के लिए अलग तय होता है। नीचे हर खेप दिखाती है कि आपकी उपज कहाँ तक पहुँची है।",
+    "transport_none_title": "अभी कोई खेप नहीं",
+    "shipment": "खेप",
+    "picked_up_on": "उठाया गया",
+    "delivered_on": "पहुँचाया गया",
+    "mark_read": "पढ़ा हुआ चिह्नित करें",
+    "mark_all_read": "सभी पढ़े हुए चिह्नित करें",
+    "read": "पढ़ा गया",
+    "notification": "सूचना",
+    "orders_filter": {
+      "all": "सभी",
+      "active": "सक्रिय",
+      "delivered": "पहुँचाए गए",
+      "cancelled": "रद्द"
+    },
+    "shipment_step": {
+      "created": "बनाया गया",
+      "assigned": "सौंपा गया",
+      "picked_up": "उठाया गया",
+      "in_transit": "रास्ते में",
+      "delivered": "पहुँचाया गया",
+      "cancelled": "रद्द"
+    },
+    "distance_label": "दूरी",
+    "eta": "पहुँचने का अनुमान",
+    "request_status": {
+      "open": "खुला",
+      "partially_fulfilled": "आंशिक रूप से पूरा",
+      "fulfilled": "पूरा हुआ",
+      "cancelled": "रद्द",
+      "expired": "समय समाप्त"
+    }
   },
   "decide": {
     "title": "बाज़ार निर्णय केंद्र",

@@ -16,7 +16,9 @@ import * as farmerListingNew from './views/farmer/listing-new.js';
 import * as farmerListingDetail from './views/farmer/listing-detail.js';
 import * as farmerBuyers from './views/farmer/buyers.js';
 import * as farmerDecisions from './views/farmer/decisions.js';
-import { make as upcoming } from './views/farmer/upcoming.js';
+import * as farmerOrders from './views/farmer/orders.js';
+import * as farmerTransport from './views/farmer/transport.js';
+import * as notifications from './views/notifications.js';
 import * as buyerHome from './views/buyer/home.js';
 import * as buyerMarket from './views/buyer/market.js';
 import * as buyerProduct from './views/buyer/product.js';
@@ -42,7 +44,7 @@ export function registerRoutes() {
   route('/signup', signup, { public: true });
 
   route('/profile', profile);
-  route('/notifications', upcoming('notifications'));
+  route('/notifications', notifications);
 
   // --- farmer ------------------------------------------------------------
   route('/farmer', farmerHome, FARMER);
@@ -53,8 +55,8 @@ export function registerRoutes() {
   route('/farmer/buyers', farmerBuyers, FARMER);
   route('/farmer/decisions', farmerDecisions, FARMER);
   route('/farmer/requests', farmerBuyers, FARMER);
-  route('/farmer/orders', upcoming('orders'), FARMER);
-  route('/farmer/transport', upcoming('transport'), FARMER);
+  route('/farmer/orders', farmerOrders, FARMER);
+  route('/farmer/transport', farmerTransport, FARMER);
 
   const BUYER = { roles: ['buyer'] };
   route('/buyer', buyerHome, BUYER);

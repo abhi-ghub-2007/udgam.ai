@@ -301,7 +301,45 @@
     }
   },
   "market": {
-    "composite_score": "Quality Score"
+    "composite_score": "Quality Score",
+    "produce": "उत्पादन",
+    "buyer_label": "खरेदीदार",
+    "your_payout": "तुमची रक्कम",
+    "plus_more_items": "+{n} आणखी",
+    "orders_none_in_filter": "या दृश्यात कोणतीही ऑर्डर नाही.",
+    "find_new_exit": "नवीन खरेदीदार शोधा",
+    "transport_intro": "वाहतूक प्रत्येक ऑर्डरसाठी ठरते. खालील प्रत्येक खेप तुमचे उत्पादन कुठवर पोहोचले हे दाखवते.",
+    "transport_none_title": "अद्याप कोणतीही खेप नाही",
+    "shipment": "खेप",
+    "picked_up_on": "उचलले",
+    "delivered_on": "पोहोचवले",
+    "mark_read": "वाचले म्हणून खूण करा",
+    "mark_all_read": "सर्व वाचले म्हणून खूण करा",
+    "read": "वाचले",
+    "notification": "सूचना",
+    "orders_filter": {
+      "all": "सर्व",
+      "active": "सक्रिय",
+      "delivered": "पोहोचवले",
+      "cancelled": "रद्द"
+    },
+    "shipment_step": {
+      "created": "तयार",
+      "assigned": "नेमले",
+      "picked_up": "उचलले",
+      "in_transit": "वाटेत",
+      "delivered": "पोहोचवले",
+      "cancelled": "रद्द"
+    },
+    "distance_label": "अंतर",
+    "eta": "पोहोचण्याचा अंदाज",
+    "request_status": {
+      "open": "खुले",
+      "partially_fulfilled": "अंशतः पूर्ण",
+      "fulfilled": "पूर्ण",
+      "cancelled": "रद्द",
+      "expired": "मुदत संपली"
+    }
   },
   "decide": {
     "title": "बाजार निर्णय केंद्र",

@@ -170,7 +170,7 @@ C:\udgam_ai\Udgam\.venv\Scripts\python.exe -c "from scripts.seed_demo import see
 
 ## 7. Security fixes made along the way
 
-Three real holes were found and closed:
+Five real holes were found and closed:
 
 1. **Anyone could post transport routes.** A farmer could invent a fake cheap
    truck to make their own numbers look better. Now only transporters can.
@@ -178,6 +178,9 @@ Three real holes were found and closed:
    only against their own requirement.
 3. **The group-order tables were completely unusable** — the database threw an
    error every time they were read. Fixed.
+4. **Anyone could post a buyer requirement.** A farmer or transporter could
+   create one naming themselves as the buyer. Now only buyers can.
+5. **Anyone could create a transporter route plan.** Now only transporters can.
 
 None of these were caused by this work; they were already there.
 
@@ -187,8 +190,6 @@ None of these were caused by this work; they were already there.
 
 - **Rotate your database password.** It was printed to a terminal during setup.
   Supabase → Settings → Database. It was never saved into the code.
-- Two other tables (`buyer_requests`, `route_plans`) have the same kind of
-  permission gap that was fixed for transport. Not urgent, but worth doing.
 - Only 6 crops have market prices. The others correctly say "no data" rather
   than inventing a number.
 

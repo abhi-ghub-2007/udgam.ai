@@ -67,7 +67,7 @@ export function date(iso, opts = { day: 'numeric', month: 'short', year: 'numeri
    routes.js. Without it the bundles are fetched at a URL that never changes, so
    a browser that has cached en.json keeps showing the old strings forever and
    any newly added key renders as its raw dotted name. */
-const BUNDLE_VERSION = '3';
+const BUNDLE_VERSION = '5';
 
 async function load(lang) {
   if (dicts[lang]) return;

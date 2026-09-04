@@ -985,9 +985,19 @@ drop policy if exists requests_select on public.buyer_requests;
 create policy requests_select on public.buyer_requests
   for select to authenticated using (status = 'open' or buyer_id = auth.uid());
 
+-- Ownership was enforced, but the role was not: any authenticated user could
+-- post a buyer requirement naming themselves as the buyer, including a farmer
+-- or a transporter. Same shape as capacity_write / aggregations_write —
+-- ownership in USING, ownership plus the role gate in WITH CHECK.
 drop policy if exists requests_write on public.buyer_requests;
 create policy requests_write on public.buyer_requests
-  for all to authenticated using (buyer_id = auth.uid()) with check (buyer_id = auth.uid());
+  for all to authenticated
+  using (buyer_id = auth.uid())
+  with check (
+    buyer_id = auth.uid()
+    and exists (select 1 from public.profiles p
+                where p.id = auth.uid() and p.role = 'buyer')
+  );
 
 -- --- aggregations ---------------------------------------------------------
 drop policy if exists aggregations_select on public.aggregations;
@@ -1154,9 +1164,16 @@ create policy shipment_locs_insert on public.shipment_locations
 
 -- A transporter never sees another transporter's routing or earnings.
 drop policy if exists route_plans_own on public.route_plans;
+-- Route plans are transporter working data; the role gate mirrors
+-- capacity_write so a farmer or buyer cannot create one for themselves.
 create policy route_plans_own on public.route_plans
   for all to authenticated
-  using (transporter_id = auth.uid()) with check (transporter_id = auth.uid());
+  using (transporter_id = auth.uid())
+  with check (
+    transporter_id = auth.uid()
+    and exists (select 1 from public.profiles p
+                where p.id = auth.uid() and p.role = 'transporter')
+  );
 
 -- --- storage --------------------------------------------------------------
 drop policy if exists storage_listings_select on public.storage_listings;

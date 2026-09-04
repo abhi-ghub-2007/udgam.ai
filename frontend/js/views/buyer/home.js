@@ -50,8 +50,13 @@ function card(p) {
 }
 
 function reqCard(r) {
-  return `<a class="card card--interactive" href="#/buyer/requests/${r.id}">
+  // A requirement carries a request_status ('open', 'fulfilled', ...), not an
+  // order_status, so it must not be looked up in order.status.* — that printed
+  // a raw "order.status.OPEN" on the dashboard. The link goes to the requests
+  // list because #/buyer/requests/:id is not a registered route.
+  const status = String(r.status || 'open').toLowerCase();
+  return `<a class="card card--interactive" href="#/buyer/requests">
     <div class="card__title">${r.crop_name} · ${r.quantity_kg} ${t('common.kg')}</div>
-    <div class="card__meta">${t(`order.status.${r.status?.toUpperCase?.() || 'DRAFT'}`)}</div>
+    <div class="card__meta">${t(`market.request_status.${status}`)}</div>
   </a>`;
 }

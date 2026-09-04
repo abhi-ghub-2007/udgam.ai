@@ -372,7 +372,45 @@
     "notifications_title": "Notifications",
     "breakdown": "Price breakdown",
     "notifications_empty": "You are all caught up. Buyer matches, accepted offers and delivery updates will appear here.",
-    "composite_score": "Quality Score"
+    "composite_score": "Quality Score",
+    "produce": "Produce",
+    "buyer_label": "Buyer",
+    "your_payout": "Your payout",
+    "plus_more_items": "+{n} more",
+    "orders_none_in_filter": "No orders in this view.",
+    "find_new_exit": "Find a new buyer",
+    "transport_intro": "Transport is arranged per order. Each shipment below shows where your produce has reached.",
+    "transport_none_title": "No shipments yet",
+    "shipment": "Shipment",
+    "picked_up_on": "Picked up",
+    "delivered_on": "Delivered",
+    "mark_read": "Mark as read",
+    "mark_all_read": "Mark all as read",
+    "read": "Read",
+    "notification": "Notification",
+    "orders_filter": {
+      "all": "All",
+      "active": "Active",
+      "delivered": "Delivered",
+      "cancelled": "Cancelled"
+    },
+    "shipment_step": {
+      "created": "Created",
+      "assigned": "Assigned",
+      "picked_up": "Picked up",
+      "in_transit": "On the way",
+      "delivered": "Delivered",
+      "cancelled": "Cancelled"
+    },
+    "distance_label": "Distance",
+    "eta": "Expected arrival",
+    "request_status": {
+      "open": "Open",
+      "partially_fulfilled": "Partly filled",
+      "fulfilled": "Fulfilled",
+      "cancelled": "Cancelled",
+      "expired": "Expired"
+    }
   },
   "profile": {
     "rating_count": "from {n} ratings",

@@ -1,4 +1,9 @@
-/* B-6 My Requirements. */
+/* B-6 My Requirements.
+
+   The cards used to be clickable and navigated to #/buyer/requests/:id, which
+   is not a registered route — every click landed on "Page not found". There is
+   no per-request detail screen yet, so the card is presented as information
+   rather than wearing an affordance it cannot honour. */
 
 import { api } from '../../core/api.js';
 import { t, money, number } from '../../core/i18n.js';
@@ -36,7 +41,7 @@ export async function render() {
 
 function reqCard(r) {
   return `
-  <article class="card card--interactive" onclick="location.hash='#/buyer/requests/${r.id}'" style="cursor:pointer">
+  <article class="card">
     <div class="row row--between">
       <h3 style="margin:0">${r.crop_name || 'Produce'}</h3>
       <span class="badge" style="background:var(--c-surface);border:1px solid var(--c-ink-muted)">

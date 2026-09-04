@@ -39,7 +39,8 @@ export async function render() {
 
 function jobCard(job) {
   return `
-  <article class="card card--interactive" onclick="location.hash='#/transporter/jobs/${job.id}'" style="cursor:pointer">
+  <article class="card card--interactive" data-job-id="${job.id}"
+           role="link" tabindex="0" style="cursor:pointer">
     <div class="row row--between">
       <h3 style="margin:0">Order ${job.order_no}</h3>
       <span class="badge" style="background:var(--c-surface)">Needs Transport</span>
@@ -51,4 +52,21 @@ function jobCard(job) {
       Cargo Value: ${money(job.subtotal_paise)}
     </div>
   </article>`;
+}
+
+
+export function mount(root) {
+  // Delegated, per router.js: no inline handlers anywhere in a view.
+  const go = (e) => {
+    const card = e.target.closest('[data-job-id]');
+    if (card) location.hash = `#/transporter/jobs/${card.dataset.jobId}`;
+  };
+  const keys = (e) => {
+    if (e.key !== 'Enter' && e.key !== ' ') return;
+    const card = e.target.closest('[data-job-id]');
+    if (card) { e.preventDefault(); location.hash = `#/transporter/jobs/${card.dataset.jobId}`; }
+  };
+  root.addEventListener('click', go);
+  root.addEventListener('keydown', keys);
+  return () => { root.removeEventListener('click', go); root.removeEventListener('keydown', keys); };
 }
