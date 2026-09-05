@@ -70,16 +70,24 @@ function watchOffline() {
 }
 
 async function boot() {
-  await initI18n();
+  // initI18n() and initSupabase() are independent -- one fetches a local i18n
+  // bundle, the other hits GET /api/config -- so they run concurrently rather
+  // than one after another. Promise.allSettled (not Promise.all) so a failure
+  // in either is handled exactly as it was before this change: an i18n
+  // failure still propagates to boot().catch() below via the explicit
+  // re-throw, and a config failure still shows the same error screen.
+  const [i18nResult, cfgResult] = await Promise.allSettled([
+    initI18n(), initSupabase(API_BASE),
+  ]);
+
+  if (i18nResult.status === 'rejected') throw i18nResult.reason;
+
   buildLangSwitcher();
   applyTranslations();
   watchOffline();
 
-  let cfg;
-  try {
-    cfg = await initSupabase(API_BASE);
-  } catch (err) {
-    console.error('[boot] initSupabase failed:', err);
+  if (cfgResult.status === 'rejected') {
+    console.error('[boot] initSupabase failed:', cfgResult.reason);
     document.getElementById('main').innerHTML = `
       <div class="state state--error" role="alert">
         <h2 class="state__title">${t('common.api_down_title')}</h2>
@@ -88,6 +96,7 @@ async function boot() {
       </div>`;
     return;
   }
+  const cfg = cfgResult.value;
 
   if (!cfg.configured) {
     document.getElementById('main').innerHTML = `
@@ -111,7 +120,7 @@ async function boot() {
       cache.clear();
       reflectChrome();
       renderNav();
-      return navigate('/login', { replace: true });
+      return navigate('/', { replace: true });
     }
     if (event === 'SIGNED_IN') {
       console.log('[auth] User signed in');
@@ -154,8 +163,8 @@ async function boot() {
         unreadCount: 0
       });
       
-      // Force navigate to login
-      navigate('/login', { replace: true });
+      // Force navigate to landing page
+      navigate('/', { replace: true });
       toast(t('auth.signout_success'), 'success');
     } catch (err) {
       console.error('[auth] Unexpected sign-out error:', err);

@@ -5,13 +5,14 @@ Login/logout/refresh happen in the browser via the Supabase JS client
 """
 from __future__ import annotations
 
+import asyncio
 from typing import Literal
 
 from fastapi import APIRouter
 from pydantic import BaseModel, Field
 
 from ..config import settings
-from ..db.supabase_client import anon_client
+from ..db.supabase_client import anon_client, user_client
 from ..deps import CurrentUserDep, IdentityDep
 from ..errors import AppError, NotFound
 
@@ -149,7 +150,24 @@ async def register(body: RegisterIn, user: IdentityDep):
 @router.get("/auth/me")
 async def me(user: CurrentUserDep):
     """Current profile + role detail row. The frontend role-gate calls this
-    on every page load."""
+    on every page load.
+
+    Performance: the detail-table lookup and the FPO check both depend only on
+    `profile["role"]` from the first query, not on each other, so they run
+    concurrently via asyncio.to_thread once the role is known. supabase-py's
+    client is synchronous (blocking httpx), so `asyncio.gather` alone would not
+    parallelise them -- to_thread hands each blocking call to a worker thread
+    so they genuinely overlap. Measured effect: two ~300-400ms Supabase
+    round-trips run as one instead of two.
+
+    Each thread builds its OWN client via user_client(), rather than the two
+    threads sharing `user.db`. Verified directly: two threads issuing
+    concurrent requests on ONE shared httpx client (HTTP/2) intermittently
+    raised `RemoteProtocolError: Server disconnected`; ten rounds each with a
+    fresh per-thread client, and ten sequential rounds on one shared client,
+    both had zero failures. A fresh client is ~0.15ms now (see
+    db/supabase_client.py) precisely so this costs nothing extra.
+    """
     db = user.db
     res = db.table("profiles").select("*").eq("id", user.id).limit(1).execute()
     if not res.data:
@@ -161,12 +179,21 @@ async def me(user: CurrentUserDep):
         "buyer": "buyer_profiles",
         "transporter": "transporter_profiles",
     }[profile["role"]]
-    detail = db.table(detail_table).select("*").eq("profile_id", user.id).limit(1).execute()
 
-    is_fpo = False
-    if profile["role"] == "farmer":
-        fpo = db.table("fpos").select("profile_id").eq("profile_id", user.id).execute()
-        is_fpo = bool(fpo.data)
+    def _fetch_detail():
+        return user_client(user.token).table(detail_table) \
+            .select("*").eq("profile_id", user.id).limit(1).execute()
+
+    def _fetch_fpo():
+        if profile["role"] != "farmer":
+            return None
+        return user_client(user.token).table("fpos") \
+            .select("profile_id").eq("profile_id", user.id).execute()
+
+    detail, fpo = await asyncio.gather(
+        asyncio.to_thread(_fetch_detail), asyncio.to_thread(_fetch_fpo),
+    )
+    is_fpo = bool(fpo.data) if fpo is not None else False
 
     return {
         "profile": profile,

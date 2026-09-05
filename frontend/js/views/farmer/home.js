@@ -19,20 +19,19 @@ let best = null;
 export async function render() {
   const profile = store.get('profile') || {};
 
-  try {
-    ({ data: payload } = await loadDashboard('/api/dashboard/farmer', 'dash.farmer'));
-  } catch {
-    payload = null;
-  }
+  // The dashboard payload and the matching feed are independent requests, so
+  // they run concurrently rather than one after another. allSettled keeps the
+  // exact same per-call fallback each had before (payload -> null, best ->
+  // null) instead of one failure aborting both, which Promise.all would do.
+  const [dashResult, matchResult] = await Promise.allSettled([
+    loadDashboard('/api/dashboard/farmer', 'dash.farmer'),
+    api.get('/api/matching/buyers'),
+  ]);
 
+  payload = dashResult.status === 'fulfilled' ? dashResult.value.data : null;
   // Top-ranked open request across this farmer's crops — the "selling
   // opportunity". Real AI-5 output, not a placeholder.
-  try {
-    const { matches } = await api.get('/api/matching/buyers');
-    best = matches?.[0] || null;
-  } catch {
-    best = null;
-  }
+  best = matchResult.status === 'fulfilled' ? (matchResult.value.matches?.[0] || null) : null;
 
   const d = payload || {};
   const listings = d.listings || [];

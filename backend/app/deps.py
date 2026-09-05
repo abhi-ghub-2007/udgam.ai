@@ -11,7 +11,7 @@ from typing import Annotated
 
 import jwt
 from fastapi import Depends, Header
-from supabase import Client
+from postgrest import SyncPostgrestClient
 
 from .db.supabase_client import user_client
 from .errors import Forbidden, Unauthenticated
@@ -23,7 +23,7 @@ class CurrentUser:
     role: str          # farmer | buyer | transporter
     email: str | None
     token: str
-    db: Client         # JWT-bound client; RLS applies
+    db: SyncPostgrestClient   # JWT-bound client; RLS applies
 
     @property
     def is_farmer(self) -> bool:
@@ -52,7 +52,7 @@ class Identity:
     id: str
     email: str | None
     token: str
-    db: Client
+    db: SyncPostgrestClient
 
 
 def _bearer(authorization: str | None) -> str:
