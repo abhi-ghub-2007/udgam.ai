@@ -1469,6 +1469,15 @@ create policy payments_select on public.payments
   for select to authenticated
   using (buyer_id = auth.uid() or public.is_order_participant(order_id, auth.uid()));
 
+-- This table had no INSERT policy at all: default-deny meant POST
+-- /orders/{id}/pay failed every single time with "new row violates row-level
+-- security policy for table payments", 500ing before the caller ever reached
+-- the buyer_id/status checks already in mock_payment(). Ownership mirrors
+-- orders_insert's shape: the row must name the caller as its own buyer.
+drop policy if exists payments_insert on public.payments;
+create policy payments_insert on public.payments
+  for insert to authenticated with check (buyer_id = auth.uid());
+
 drop policy if exists idempotency_own on public.idempotency_keys;
 create policy idempotency_own on public.idempotency_keys
   for all to authenticated using (user_id = auth.uid()) with check (user_id = auth.uid());

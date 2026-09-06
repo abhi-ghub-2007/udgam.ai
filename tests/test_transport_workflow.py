@@ -200,3 +200,18 @@ def test_distance_reuses_the_existing_haversine():
     """Not a second distance calculation (§28)."""
     src = inspect.getsource(tr._capacity_route_km)
     assert "haversine" in src
+
+
+# --------------------------------------------------------- RLS: payments_insert
+def test_payments_table_has_an_insert_policy():
+    """payments had a select policy and no insert policy at all, so RLS
+    default-deny made POST /orders/{id}/pay 500 on every attempt -- found by
+    running the actual accept flow end to end, not by reading the schema."""
+    sql = _schema_sql()
+    assert "create policy payments_insert" in sql
+
+
+def test_payments_insert_is_scoped_to_the_callers_own_buyer_id():
+    check = _policy("payments_insert")
+    assert "buyer_id = auth.uid()" in check
+    assert "to authenticated" in check and " to anon" not in check
