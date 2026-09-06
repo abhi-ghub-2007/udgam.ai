@@ -147,6 +147,16 @@ export const useMatchingListings = () =>
   });
 
 /* ---------------------------------------------------------------- orders */
+type OrderEnvelope = { order: Order; items: Order['items']; farmer: Order['farmer']; buyer: Order['buyer'] };
+
+// GET /api/orders/{id} and POST /api/orders (routers/orders.py get_order /
+// create_order -- the latter returns the former) both return
+// {"order": {...}, "items": [...], "farmer": {...}, "buyer": {...}, ...},
+// a different shape from the list endpoint, which already flattens
+// items/counterparty onto each row. Reading the envelope as the Order itself
+// left every field (status, order_no, items) undefined.
+const unwrapOrder = (r: OrderEnvelope): Order => ({ ...r.order, items: r.items ?? [], farmer: r.farmer, buyer: r.buyer });
+
 export const useOrders = () =>
   useQuery({
     queryKey: ['orders'],
@@ -157,16 +167,38 @@ export const useOrder = (id: string | undefined) =>
   useQuery({
     queryKey: ['orders', id],
     enabled: Boolean(id),
-    // GET /api/orders/{id} (routers/orders.py get_order) returns
-    // {"order": {...}, "items": [...], "farmer": {...}, "buyer": {...}, ...}
-    // -- a different shape from the list endpoint, which already flattens
-    // items/counterparty onto each row. Reading the envelope as the Order
-    // itself left every field (status, order_no, items) undefined.
-    queryFn: () =>
-      api.get<{ order: Order; items: Order['items']; farmer: Order['farmer']; buyer: Order['buyer'] }>(
-        `/api/orders/${id}`,
-      ).then((r) => ({ ...r.order, items: r.items ?? [], farmer: r.farmer, buyer: r.buyer })),
+    queryFn: () => api.get<OrderEnvelope>(`/api/orders/${id}`).then(unwrapOrder),
   });
+
+/**
+ * B-2: places an order against a listing (POST /api/orders,
+ * routers/orders.py create_order). The backend derives the price from the
+ * listing's authoritative asking_price_paise and re-validates quantity
+ * against what is actually still available -- the frontend never sends a
+ * price and must treat any total it shows before submitting as an estimate.
+ */
+export function useCreateOrder() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (body: {
+      product_id: string;
+      farmer_id: string;
+      quantity_kg: number;
+      logistics_arranged_by: 'buyer' | 'farmer';
+      delivery_pincode?: string | null;
+      needed_by?: string | null;
+      notes?: string | null;
+    }) => api.post<OrderEnvelope>('/api/orders', body).then(unwrapOrder),
+    onSuccess: (order) => {
+      void qc.invalidateQueries({ queryKey: ['orders'] });
+      // The listing's available quantity just changed for every viewer.
+      void qc.invalidateQueries({ queryKey: ['products'] });
+      void qc.invalidateQueries({ queryKey: ['dashboard', 'buyer'] });
+      void qc.invalidateQueries({ queryKey: ['dashboard', 'farmer'] });
+      qc.setQueryData(['orders', order.id], order);
+    },
+  });
+}
 
 /* ------------------------------------------------------------- transport */
 export const useShipments = () =>
