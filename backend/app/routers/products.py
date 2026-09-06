@@ -39,7 +39,11 @@ def _flatten(row: dict) -> dict:
 
 # ---------------------------------------------------------------- schemas
 class ProductIn(BaseModel):
-    crop_id: str
+    # Exactly one of these. crop_id picks an existing crop; crop_name is the
+    # farmer typing one that isn't in the dropdown yet, so growers are never
+    # blocked from listing something the seed list happens to miss.
+    crop_id: str | None = None
+    crop_name: str | None = Field(default=None, max_length=100)
     quantity_kg: float = Field(gt=0)
     asking_price_paise: int = Field(gt=0)
     harvest_date: date | None = None
@@ -135,8 +139,47 @@ async def get_product(product_id: str, user: CurrentUserDep):
 
 
 # ---------------------------------------------------------------- write
+def _resolve_or_create_crop(name: str) -> str:
+    """Find a crop by name (case-insensitive), or create one.
+
+    crops is read-only to clients (crops_read is the only policy on it), so
+    this runs as the service role -- the farmer is not writing the crops
+    table directly, the backend is, on their behalf, after validating the
+    input itself. A new crop gets a generated code and English name only;
+    hi/mr names stay null until someone translates them, same as any other
+    optional field.
+    """
+    admin = admin_client()
+    name = name.strip()
+    existing = (
+        admin.table("crops").select("id")
+        .ilike("name_en", name).limit(1).execute().data
+    )
+    if existing:
+        return existing[0]["id"]
+
+    code = "".join(ch for ch in name.upper() if ch.isalnum() or ch == "_")[:30] or "CROP"
+    # Codes are free text farmers chose, so collisions are expected -- suffix
+    # rather than fail the listing over a naming clash.
+    for suffix in ("", *[f"_{i}" for i in range(2, 20)]):
+        candidate = f"{code}{suffix}"
+        if not admin.table("crops").select("id").eq("code", candidate).limit(1).execute().data:
+            code = candidate
+            break
+
+    res = admin.table("crops").insert({
+        "code": code, "name_en": name, "name_hi": name, "name_mr": name,
+        "category": "other", "default_shelf_life_days": 14,
+    }).execute()
+    return res.data[0]["id"]
+
+
 @router.post("/products", status_code=201, dependencies=[require_farmer])
 async def create_product(body: ProductIn, user: CurrentUserDep):
+    if not body.crop_id and not body.crop_name:
+        raise ValidationFailed("Choose a crop or type its name.", field="crop_id")
+    crop_id = body.crop_id or _resolve_or_create_crop(body.crop_name)
+
     district = body.district
     if not district and body.location_id:
         loc = (
@@ -150,7 +193,7 @@ async def create_product(body: ProductIn, user: CurrentUserDep):
 
     row = {
         "farmer_id": user.id,
-        "crop_id": body.crop_id,
+        "crop_id": crop_id,
         "quantity_kg": body.quantity_kg,
         "available_quantity_kg": body.quantity_kg,
         "asking_price_paise": body.asking_price_paise,

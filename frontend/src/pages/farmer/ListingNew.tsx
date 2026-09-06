@@ -39,9 +39,14 @@ export default function ListingNew() {
   const gradePhoto = useGradePhoto();
 
   const [f, setF] = useState({
-    crop_id: '', quantity_kg: '', price_rupees: '',
+    crop_id: '', crop_name: '', quantity_kg: '', price_rupees: '',
     harvest_date: '', available_until: '', district: profile?.district ?? '', description: '',
   });
+  // The dropdown holds a stable "OTHER" sentinel rather than "" for the typed
+  // case, so an empty selection still fails validation instead of silently
+  // matching the free-text branch.
+  const OTHER = '__other__';
+  const usingOther = f.crop_id === OTHER;
   const [errors, setErrors] = useState<Record<string, string | undefined>>({});
   const [previews, setPreviews] = useState<Record<string, string>>({});
   const fileInputs = useRef<Record<string, HTMLInputElement | null>>({});
@@ -86,6 +91,7 @@ export default function ListingNew() {
     e.preventDefault();
     const errs: Record<string, string> = {};
     if (!f.crop_id) errs.crop_id = t('market.err_crop');
+    else if (usingOther && !f.crop_name.trim()) errs.crop_name = t('market.err_crop_name');
     const qty = Number(f.quantity_kg);
     if (!(qty > 0)) errs.quantity_kg = t('market.err_quantity');
     const price = Number(f.price_rupees);
@@ -96,7 +102,9 @@ export default function ListingNew() {
     let product: Product;
     try {
       product = await create.mutateAsync({
-        crop_id: f.crop_id,
+        // Backend resolves crop_name to an existing crop (case-insensitive)
+        // or creates one -- never both fields at once.
+        ...(usingOther ? { crop_name: f.crop_name.trim() } : { crop_id: f.crop_id }),
         quantity_kg: qty,
         // Rupees -> integer paise. The only place this conversion happens.
         asking_price_paise: Math.round(price * 100),
@@ -180,8 +188,19 @@ export default function ListingNew() {
               {(crops.data ?? []).map((c) => (
                 <option key={c.id} value={c.id}>{cropName(c)}</option>
               ))}
+              {/* Not every crop a farmer grows will be in this list -- typing
+                  one in adds it rather than blocking the listing. */}
+              <option value={OTHER}>{t('market.crop_other')}</option>
             </Select>
           </Field>
+
+          {usingOther && (
+            <Field label={t('market.crop_name')} htmlFor="crop-name" error={errors.crop_name} required>
+              <Input id="crop-name" value={f.crop_name} maxLength={100}
+                     invalid={Boolean(errors.crop_name)}
+                     onChange={(e) => set('crop_name')(e.target.value)} />
+            </Field>
+          )}
 
           <div className="grid gap-4 sm:grid-cols-2">
             <Field label={t('market.quantity_kg')} htmlFor="qty" error={errors.quantity_kg} required>

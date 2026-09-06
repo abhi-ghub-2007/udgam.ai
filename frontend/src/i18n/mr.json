@@ -338,6 +338,9 @@
     }
   },
   "market": {
+    "err_crop_name": "पिकाचे नाव लिहा.",
+    "crop_other": "इतर (स्वतःचे पीक लिहा)",
+    "crop_name": "पिकाचे नाव",
     "composite_score": "Quality Score",
     "produce": "उत्पादन",
     "err_order_quantity": "तुम्हाला किती किलोग्रॅम खरेदी करायचे आहे ते नमूद करा.",

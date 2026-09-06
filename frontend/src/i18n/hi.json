@@ -338,6 +338,9 @@
     }
   },
   "market": {
+    "err_crop_name": "फ़सल का नाम लिखें।",
+    "crop_other": "अन्य (अपनी फ़सल लिखें)",
+    "crop_name": "फ़सल का नाम",
     "composite_score": "Quality Score",
     "produce": "उपज",
     "err_order_quantity": "आप कितने किलोग्राम खरीदना चाहते हैं, यह दर्ज करें।",
