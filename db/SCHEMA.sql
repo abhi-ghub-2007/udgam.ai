@@ -160,6 +160,35 @@ $$;
 -- True when `uid` is the buyer, the sole farmer, a line-item farmer, or the
 -- assigned transporter on the order. The single predicate every
 -- order-adjacent policy reuses.
+--
+-- LANGUAGE plpgsql, not sql: this function queries `orders` (the very table
+-- it secures the SELECT policy for), and PostgREST always requests
+-- `Prefer: return=representation` on inserts. Under RLS, an INSERT ...
+-- RETURNING re-checks the SELECT policy against the just-inserted row in the
+-- same statement. A `language sql` function is inlined by the planner, and
+-- inlining a self-referential subquery into that combined INSERT-RETURNING
+-- plan made it evaluate as if the new row didn't exist yet -- every buyer's
+-- very first order failed with "new row violates row-level security policy
+-- for table orders" even though buyer_id = auth.uid() was correct. plpgsql
+-- functions are opaque to the planner (never inlined), which is the
+-- documented fix for this class of bug; the logic and security model here
+-- are unchanged.
+create or replace function public.is_order_participant(order_uuid uuid, uid uuid)
+returns boolean language plpgsql stable security definer set search_path = public as $$
+begin
+  return exists (
+    select 1 from public.orders o where o.id = order_uuid
+      and (o.buyer_id = uid or o.farmer_id = uid)
+  ) or exists (
+    select 1 from public.order_items oi
+    where oi.order_id = order_uuid and oi.farmer_id = uid
+  ) or exists (
+    select 1 from public.shipments s
+    where s.order_id = order_uuid and s.transporter_id = uid
+  );
+end;
+$$;
+
 -- True when `uid` has a line item in the aggregation. SECURITY DEFINER on
 -- purpose: aggregations_select needs to consult aggregation_items and
 -- agg_items_select needs to consult aggregations, which is a mutual RLS
@@ -181,20 +210,6 @@ returns boolean language sql stable security definer set search_path = public as
   select exists (
     select 1 from public.aggregations a
     where a.id = agg_uuid and a.buyer_id = uid
-  );
-$$;
-
-create or replace function public.is_order_participant(order_uuid uuid, uid uuid)
-returns boolean language sql stable security definer set search_path = public as $$
-  select exists (
-    select 1 from public.orders o where o.id = order_uuid
-      and (o.buyer_id = uid or o.farmer_id = uid)
-  ) or exists (
-    select 1 from public.order_items oi
-    where oi.order_id = order_uuid and oi.farmer_id = uid
-  ) or exists (
-    select 1 from public.shipments s
-    where s.order_id = order_uuid and s.transporter_id = uid
   );
 $$;
 
@@ -1053,9 +1068,37 @@ create policy agg_items_farmer_consent on public.aggregation_items
 -- --- orders ---------------------------------------------------------------
 -- Participants only: buyer, sole farmer, any line-item farmer, or the
 -- assigned transporter. Nobody else sees an order exists.
+--
+-- orders_select and orders_update OR the row's own buyer_id/farmer_id check
+-- in ahead of is_order_participant(), even though that function already
+-- covers the same two cases -- that function re-queries `orders` by id, and
+-- PostgREST always sends `Prefer: return=representation` on writes. For
+-- INSERT/UPDATE ... RETURNING under RLS, Postgres re-checks the SELECT/USING
+-- policy against the row THIS SAME COMMAND just wrote -- but a command
+-- cannot see its own effects via a fresh subquery (standard MVCC command-
+-- visibility), so is_order_participant()'s self-referencing subquery on
+-- `orders`, called from a policy that protects `orders` itself, always
+-- evaluated as if the new/updated row didn't exist yet. The buyer's very
+-- first order failed with "new row violates row-level security policy for
+-- table orders" even though buyer_id = auth.uid() was correct.
+--
+-- The fix checks buyer_id/farmer_id inline first -- the executor already has
+-- that tuple in hand, no re-query needed, so it works for a row from the
+-- current command too -- and falls back to is_order_participant() only for
+-- the rarer line-item-farmer/transporter cases. That function must stay a
+-- SECURITY DEFINER call here rather than an inlined cross-table EXISTS:
+-- order_items_write (below) is a raw, un-wrapped `for all` policy that
+-- itself queries `orders` directly, so an un-wrapped reference to
+-- order_items from inside orders' own policy is a genuine two-hop RLS
+-- cycle ("infinite recursion detected in policy") -- is_order_participant's
+-- SECURITY DEFINER runs its internal order_items/shipments lookups as the
+-- function owner, bypassing their RLS and breaking that cycle, exactly as
+-- it does for every other order-adjacent policy already.
 drop policy if exists orders_select on public.orders;
 create policy orders_select on public.orders
-  for select to authenticated using (public.is_order_participant(id, auth.uid()));
+  for select to authenticated using (
+    buyer_id = auth.uid() or farmer_id = auth.uid() or public.is_order_participant(id, auth.uid())
+  );
 
 drop policy if exists orders_insert on public.orders;
 create policy orders_insert on public.orders
@@ -1066,8 +1109,8 @@ create policy orders_insert on public.orders
 drop policy if exists orders_update on public.orders;
 create policy orders_update on public.orders
   for update to authenticated
-  using (public.is_order_participant(id, auth.uid()))
-  with check (public.is_order_participant(id, auth.uid()));
+  using (buyer_id = auth.uid() or farmer_id = auth.uid() or public.is_order_participant(id, auth.uid()))
+  with check (buyer_id = auth.uid() or farmer_id = auth.uid() or public.is_order_participant(id, auth.uid()));
 
 drop policy if exists order_items_select on public.order_items;
 create policy order_items_select on public.order_items

@@ -14,6 +14,7 @@ from datetime import datetime, timezone
 from fastapi import APIRouter, Depends
 from pydantic import BaseModel, Field
 
+from ..db.admin_client import admin_client
 from ..deps import CurrentUserDep, require_role
 from ..errors import NotFound, ValidationFailed, Forbidden
 from ..services.state_machine import validate_transition, record_transition
@@ -130,12 +131,22 @@ async def create_order(body: OrderCreateIn, user: CurrentUserDep):
         user.id, "buyer", body.notes,
     )
 
-    # Reserve the quantity on the product
+    # Reserve the quantity on the product. This is a service-role write, not
+    # user.db: products_update RLS (db/SCHEMA.sql) scopes writes to the owning
+    # farmer only -- correctly, since a buyer must never edit a farmer's
+    # listing -- but placing an order is exactly the kind of buyer-initiated,
+    # backend-computed side effect that legitimate write is too narrow for.
+    # Under the buyer's own RLS-scoped client this update silently touched 0
+    # rows (no error; Postgres just filters it out of the UPDATE), so every
+    # order ever placed left the listing's available quantity unchanged --
+    # a real overselling hole. The quantity and ownership were already
+    # validated above against the buyer's own read; admin_client() here only
+    # performs the write that validation already authorized (A-12).
     new_avail = float(p["available_quantity_kg"]) - body.quantity_kg
     patch = {"available_quantity_kg": max(new_avail, 0)}
     if new_avail <= 0:
         patch["status"] = "reserved"
-    user.db.table("products").update(patch).eq("id", body.product_id).execute()
+    admin_client().table("products").update(patch).eq("id", body.product_id).execute()
 
     return await get_order(order_id, user)
 
