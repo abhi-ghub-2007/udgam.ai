@@ -1,0 +1,75 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ===========================================================================
+   UDGAM global styles. Tokens live in tailwind.config.ts; this file only holds
+   base element defaults and the few component classes that are genuinely
+   cross-cutting.
+   =========================================================================== */
+
+@layer base {
+  :root {
+    color-scheme: light;
+  }
+
+  html {
+    -webkit-text-size-adjust: 100%;
+  }
+
+  body {
+    @apply bg-bg text-ink font-sans text-body antialiased;
+    /* 1.625 minimum: below this, Hindi matras and the shirorekha clip against
+       the line above. */
+  }
+
+  /* Devanagari needs more vertical room than Latin at the same px size. */
+  :lang(hi) body,
+  :lang(mr) body {
+    line-height: 1.75;
+  }
+
+  h1 { @apply text-h1 font-bold tracking-[-0.02em]; }
+  h2 { @apply text-h2 font-semibold; }
+
+  /* A visible, high-contrast focus ring everywhere. Outdoor readability and
+     keyboard accessibility are the same requirement here. */
+  :focus-visible {
+    @apply outline-none ring-[3px] ring-primary/45 ring-offset-2 ring-offset-bg;
+  }
+
+  ::placeholder { @apply text-outline; }
+
+  /* Honour the OS-level reduced-motion setting. Users who disable motion get a
+     correct static experience, not a broken one. */
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
+}
+
+@layer components {
+  /* Skeletons: a shimmering block that communicates *what* is loading by
+     taking the shape of the thing it replaces. */
+  .skeleton {
+    @apply rounded-md bg-surface-high;
+    background-image: linear-gradient(
+      90deg,
+      theme('colors.surface.high') 0%,
+      theme('colors.surface.container') 50%,
+      theme('colors.surface.high') 100%
+    );
+    background-size: 200% 100%;
+    @apply animate-shimmer;
+  }
+
+  /* Tabular numerals keep money columns aligned as values change. */
+  .tnum { font-variant-numeric: tabular-nums; }
+}
+
+/* Leaflet is lazy-loaded; its CSS is imported alongside the component so it
+   never lands in the initial bundle. */

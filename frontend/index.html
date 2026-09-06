@@ -1,74 +1,22 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
 <meta charset="utf-8">
 <!-- No maximum-scale / user-scalable=no: pinch zoom is an accessibility
      requirement for this user base, not a layout inconvenience. -->
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="theme-color" content="#2D6A4F">
+<meta name="theme-color" content="#006e1c">
 <meta name="description" content="UDGAM.ai - farmers and buyers, directly connected.">
 <title>UDGAM.ai</title>
+<link rel="icon" href="/assets/logo.svg">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;600;700;800&display=swap">
-<link rel="stylesheet" href="./css/tokens.css">
-<link rel="stylesheet" href="./css/base.css">
-<link rel="stylesheet" href="./css/components.css">
-<link rel="stylesheet" href="./css/shell.css">
-<link rel="stylesheet" href="./css/landing.css">
+<link rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;600;700&display=swap">
 </head>
 <body>
-
-<a class="skip-link" href="#main" data-i18n="common.skip_to_content">Skip to content</a>
-
-<!-- C-5: stale-data banner. Rural-bandwidth claims must be visible in the
-     product, not just on the slides. -->
-<div id="stale-banner" class="banner banner--warning" role="status" hidden>
-  <span data-i18n="common.stale_data">Showing saved data. You are offline.</span>
-</div>
-
-<header id="app-header" class="app-header" hidden>
-  <a class="app-header__brand" href="#/">
-    <img src="./assets/logo.svg" alt="" width="28" height="28" aria-hidden="true">
-    <span class="app-header__name">UDGAM<span class="app-header__dot">.ai</span></span>
-  </a>
-
-  <div class="app-header__actions">
-    <label class="lang-switch">
-      <span class="sr-only" data-i18n="common.language">Language</span>
-      <select id="lang-select" class="lang-switch__select"></select>
-    </label>
-
-    <a class="icon-btn" href="#/notifications"
-       data-i18n-attr="aria-label:nav.notifications">
-      <svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true" focusable="false">
-        <path fill="currentColor" d="M12 22a2 2 0 0 0 2-2h-4a2 2 0 0 0 2 2Zm6-6V11a6 6 0 0 0-5-5.91V4a1 1 0 1 0-2 0v1.09A6 6 0 0 0 6 11v5l-1.7 1.7a1 1 0 0 0 .7 1.3h14a1 1 0 0 0 .7-1.7Z"/>
-      </svg>
-      <span id="unread-badge" class="icon-btn__badge" hidden>0</span>
-    </a>
-  </div>
-</header>
-
-<main id="main" class="app-main" tabindex="-1"></main>
-
-<!-- Bottom nav: max 5 items, every icon paired with a text label
-     (DESIGN.md: no standalone icons). Populated per role by nav.js. -->
-<nav id="bottom-nav" class="bottom-nav" data-i18n-attr="aria-label:nav.primary" hidden></nav>
-
-<!-- Desktop side rail. Same items as the bottom nav plus the ones that do not
-     fit five slots; nav.js renders both from one list. -->
-<aside id="side-rail" class="side-rail" data-i18n-attr="aria-label:nav.primary" hidden></aside>
-
-<!-- C-3 voice assistant. 64px, Harvest Gold, bottom-right, with a typed
-     fallback inside the panel (A-21: the mic is never load-bearing). -->
-<button id="voice-fab" class="voice-fab" data-i18n-attr="aria-label:assistant.open" hidden>
-  <svg viewBox="0 0 24 24" width="28" height="28" aria-hidden="true" focusable="false">
-    <path fill="currentColor" d="M12 15a3 3 0 0 0 3-3V6a3 3 0 0 0-6 0v6a3 3 0 0 0 3 3Zm5-3a5 5 0 0 1-10 0H5a7 7 0 0 0 6 6.92V22h2v-3.08A7 7 0 0 0 19 12Z"/>
-  </svg>
-</button>
-
-<div id="toast-region" class="toast-region" role="status" aria-live="polite"></div>
-
-<script type="module" src="./js/app.js?v=11"></script>
+<a href="#main" class="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-toast focus:rounded-md focus:bg-primary focus:px-4 focus:py-3 focus:text-white">Skip to content</a>
+<div id="root"></div>
+<script type="module" src="/src/main.tsx"></script>
 </body>
 </html>

@@ -30,3 +30,8 @@ desktop.ini
 # ---- Logs / scratch ----
 *.log
 scratch/
+
+# ---- React frontend build output ----
+frontend/node_modules/
+frontend/dist/
+frontend/dev-dist/
