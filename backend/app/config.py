@@ -34,6 +34,12 @@ class Settings(BaseSettings):
     RAZORPAY_KEY_ID: str = ""
     RAZORPAY_KEY_SECRET: str = ""
     OSRM_BASE_URL: str = "https://router.project-osrm.org"
+    # Server-side only, like SUPABASE_ANON_KEY -- never baked into the bundle
+    # as a VITE_* build-time var. Reaches the browser at runtime via
+    # GET /api/config (A-16 pattern), which lets referrer-restriction in
+    # Google Cloud Console be the actual security boundary rather than
+    # secrecy of a key that has to be readable by client-side JS anyway.
+    GOOGLE_MAPS_API_KEY: str = ""
 
     # --- App ------------------------------------------------------------
     APP_ENV: str = "development"

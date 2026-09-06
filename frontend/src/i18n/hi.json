@@ -25,7 +25,8 @@
     "km": "कि.मी.",
     "none_yet": "अभी कुछ नहीं है",
     "network_error": "नेटवर्क त्रुटि। कृपया अपना कनेक्शन जांचें",
-    "delete": "हटाएँ"
+    "delete": "हटाएँ",
+    "min": "मिनट"
   },
   "nav": {
     "primary": "मुख्य नेविगेशन",
@@ -206,7 +207,8 @@
     "amount_to_pay": "देय राशि",
     "payment_held": "भुगतान सुरक्षित",
     "pay_is_mock": "डेमो भुगतान। कोई असली पैसा नहीं चलता; यह केवल ऑर्डर को भुगतान-किया चिह्नित करता है ताकि परिवहन तय हो सके।",
-    "awaiting_payment": "ख़रीदार के भुगतान की प्रतीक्षा"
+    "awaiting_payment": "ख़रीदार के भुगतान की प्रतीक्षा",
+    "confirm_delivery": "डिलीवरी की पुष्टि करें"
   },
   "landing": {
     "nav_platform": "प्लेटफ़ॉर्म",
@@ -435,7 +437,20 @@
     "ranked_note": "लागत, फिर दूरी के क्रम में। रेटिंग केवल आपकी मदद के लिए है और इस क्रम को नहीं बदलती।",
     "awaiting_transporter": "ट्रांसपोर्टर की स्वीकृति की प्रतीक्षा",
     "awaiting_transporter_body": "{n} अनुरोध भेजे गए। स्वीकार या अस्वीकार होते ही आपको बताया जाएगा।",
-    "transport_assigned": "ट्रांसपोर्टर तय हुआ"
+    "transport_assigned": "ट्रांसपोर्टर तय हुआ",
+    "i_have_picked_up": "मैंने उपज उठा ली है",
+    "start_journey": "यात्रा शुरू करें",
+    "mark_arrived": "गंतव्य पर पहुँचा हुआ चिह्नित करें",
+    "journey_preview": "यात्रा पूर्वावलोकन",
+    "awaiting_farmer_pickup_confirmation": "किसान की पुष्टि की प्रतीक्षा है कि उपज तैयार है, तभी आप इसे उठाया हुआ चिह्नित कर सकेंगे।",
+    "navigate_with_maps": "Google Maps से रास्ता देखें",
+    "transport_tracking": "परिवहन ट्रैकिंग",
+    "confirm_pickup_hint": "उपज पैक होकर सौंपने के लिए तैयार होने पर पुष्टि करें। इसके बाद ही ट्रांसपोर्टर यात्रा शुरू कर सकेगा।",
+    "live_connected": "लाइव",
+    "live_disconnected": "फिर से जुड़ रहे हैं…",
+    "live_connecting": "जुड़ रहे हैं…",
+    "last_updated": "अपडेट किया गया",
+    "arrived_confirm_hint": "ट्रांसपोर्टर डिलीवरी स्थान पर पहुँच गया है। उपज मिलने और जाँचने के बाद पुष्टि करें।"
   },
   "decide": {
     "title": "बाज़ार निर्णय केंद्र",
@@ -539,6 +554,22 @@
     "offer_closed_title": "अनुरोध अब उपलब्ध नहीं",
     "offer_closed_body": "ऑर्डर {order_no} का माल किसी और ट्रांसपोर्टर ने ले लिया।",
     "review_received_title": "आपको समीक्षा मिली",
-    "review_received_body": "ऑर्डर {order_no} पर {rating} स्टार।"
+    "review_received_body": "ऑर्डर {order_no} पर {rating} स्टार।",
+    "journey_started_title": "ट्रांसपोर्टर रास्ते में है",
+    "journey_started_body": "ऑर्डर {order_no} के लिए ट्रांसपोर्टर ने यात्रा शुरू कर दी है।",
+    "arrived_title": "ट्रांसपोर्टर पहुँच गया",
+    "arrived_body": "ऑर्डर {order_no} के लिए ट्रांसपोर्टर आपके डिलीवरी स्थान के पास है या पहुँच गया है।",
+    "arrived_body_farmer": "ऑर्डर {order_no} के लिए ट्रांसपोर्टर गंतव्य के पास है या पहुँच गया है।",
+    "pickup_confirmed_title": "पिकअप की पुष्टि हुई",
+    "pickup_confirmed_body": "ऑर्डर {order_no} के लिए किसान ने पिकअप की पुष्टि कर दी है। अब आप यात्रा शुरू कर सकते हैं।",
+    "delivery_confirmed_title": "डिलीवरी की पुष्टि हुई",
+    "delivery_confirmed_body_transporter": "ऑर्डर {order_no} के लिए ख़रीदार ने डिलीवरी की पुष्टि कर दी है।",
+    "delivery_confirmed_body_farmer": "ऑर्डर {order_no} के लिए ख़रीदार ने डिलीवरी की पुष्टि कर दी है।"
+  },
+  "maps": {
+    "not_configured": "इस सेटअप में मैप अभी उपलब्ध नहीं है।",
+    "failed_to_load": "मैप लोड नहीं हो सका। कनेक्शन जाँचें और फिर कोशिश करें।",
+    "search_hint": "जगह खोजें, या मैप पर टैप करके पिन लगाएँ।",
+    "route_unavailable": "अभी रूट नहीं निकाला जा सका।"
   }
 }

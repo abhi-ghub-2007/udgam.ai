@@ -141,6 +141,14 @@ do $$ begin
   create type shipment_status as enum ('created','assigned','picked_up','in_transit','delivered','cancelled');
 exception when duplicate_object then null; end $$;
 
+-- 'arrived' sits between in_transit and delivered: the transporter reaching
+-- the destination and the BUYER confirming delivery are two different actors'
+-- decisions and must not be collapsed into one status a transporter alone
+-- can set (see shipments_confirm_delivery_paise / confirm-delivery endpoint).
+do $$ begin
+  alter type shipment_status add value if not exists 'arrived' after 'in_transit';
+exception when duplicate_object then null; end $$;
+
 do $$ begin
   create type booking_status as enum ('requested','confirmed','active','completed','cancelled');
 exception when duplicate_object then null; end $$;
@@ -745,6 +753,57 @@ exception when duplicate_object then null; end $$;
 -- accept endpoint reports as "already taken" rather than 500.
 create unique index if not exists uq_shipment_live_per_order
   on public.shipments(order_id) where status <> 'cancelled';
+
+-- Additive: real Farmer/Buyer/Transporter live-tracking workflow.
+--
+-- Pickup/drop had address text only -- no coordinates, so route preview,
+-- distance, ETA and geofencing had nothing to compute from. Google's Places
+-- Autocomplete returns exactly this shape (address, lat, lng, place_id); it
+-- is stored as given, never re-geocoded.
+alter table public.shipments add column if not exists pickup_lat       double precision;
+alter table public.shipments add column if not exists pickup_lon       double precision;
+alter table public.shipments add column if not exists pickup_place_id  text;
+alter table public.shipments add column if not exists drop_lat         double precision;
+alter table public.shipments add column if not exists drop_lon         double precision;
+alter table public.shipments add column if not exists drop_place_id    text;
+
+-- The farmer must explicitly say the produce is ready before the transporter
+-- can start the journey -- previously the transporter alone controlled every
+-- shipment transition, with no second actor in the loop at all.
+alter table public.shipments add column if not exists pickup_confirmed_at timestamptz;
+alter table public.shipments add column if not exists pickup_confirmed_by uuid references public.profiles(id);
+alter table public.shipments add column if not exists journey_started_at  timestamptz;
+-- Set once, the first time a location update's distance to the drop point
+-- crosses the geofence threshold. Reaching the destination is NOT the same
+-- as delivery: the buyer confirms that separately (confirm-delivery below).
+alter table public.shipments add column if not exists arrived_at         timestamptz;
+
+-- Fast-path "where is the transporter right now" columns, read on every map
+-- render. shipment_locations (already existed, RLS already correct, never
+-- had a writer) stays the append-only history a full trail needs; these
+-- columns are the O(1) latest-position read so a live map never scans it.
+alter table public.shipments add column if not exists current_lat            double precision;
+alter table public.shipments add column if not exists current_lon            double precision;
+alter table public.shipments add column if not exists current_heading        double precision;
+alter table public.shipments add column if not exists current_speed_kmph     numeric(6,2);
+alter table public.shipments add column if not exists current_accuracy_m     numeric(8,2);
+alter table public.shipments add column if not exists location_updated_at    timestamptz;
+alter table public.shipments add column if not exists is_tracking            boolean not null default false;
+
+-- shipment_locations gains the same per-sample fields as the fast-path
+-- columns, so the history trail is not a strictly poorer copy of the latest
+-- reading.
+alter table public.shipment_locations add column if not exists heading     double precision;
+alter table public.shipment_locations add column if not exists accuracy_m  numeric(8,2);
+
+-- Realtime: the buyer/farmer tracking map subscribes to UPDATEs on this row
+-- rather than polling. RLS still applies to realtime changefeeds (Supabase
+-- enforces the table's existing policies for authenticated subscribers), so
+-- this does not widen who can see a shipment -- shipments_select already
+-- scopes it to the transporter and order participants.
+do $$ begin
+  alter publication supabase_realtime add table public.shipments;
+exception when duplicate_object then null; end $$;
 
 -- Additive (declared here, after shipments, because it references it):
 -- consolidation_requests already modelled "ask a capacity owner to carry

@@ -233,7 +233,9 @@ export function usePayOrder(orderId: string | undefined) {
 export function useUpdateShipmentStatus(shipmentId: string | undefined) {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (status: 'picked_up' | 'in_transit' | 'delivered') =>
+    // 'delivered' is no longer accepted here -- the backend rejects it. Only
+    // the buyer's own confirm-delivery call (useConfirmDelivery) can set it.
+    mutationFn: (status: 'picked_up' | 'in_transit' | 'arrived') =>
       api.post<{ ok: boolean; status: string }>(`/api/shipments/${shipmentId}/status`, { status }),
     onSuccess: () => {
       void qc.invalidateQueries({ queryKey: ['shipments'] });
@@ -242,6 +244,49 @@ export function useUpdateShipmentStatus(shipmentId: string | undefined) {
     },
   });
 }
+
+/** Farmer says the produce is ready and handed over. Gates the transporter's
+    own ability to mark 'picked_up' (§3). */
+export function useConfirmPickup(shipmentId: string | undefined) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: () => api.post<{ ok: boolean }>(`/api/shipments/${shipmentId}/confirm-pickup`, {}),
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: ['shipments'] });
+      void qc.invalidateQueries({ queryKey: ['orders'] });
+    },
+  });
+}
+
+/** Buyer says the goods actually arrived (§13) -- the only path to
+    shipment status 'delivered' and order status DELIVERED. */
+export function useConfirmDelivery(shipmentId: string | undefined) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: () => api.post<{ ok: boolean }>(`/api/shipments/${shipmentId}/confirm-delivery`, {}),
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: ['shipments'] });
+      void qc.invalidateQueries({ queryKey: ['orders'] });
+      void qc.invalidateQueries({ queryKey: ['dashboard'] });
+    },
+  });
+}
+
+export interface ShipmentCheckpoint {
+  code: 'created' | 'pickup_confirmed' | 'journey_started' | 'near_destination' | 'arrived' | 'delivered';
+  at: string | null;
+  done: boolean;
+}
+
+/** Real timestamps, not fake frontend states (§11). */
+export const useShipmentCheckpoints = (shipmentId: string | undefined) =>
+  useQuery({
+    queryKey: ['shipments', 'checkpoints', shipmentId],
+    enabled: Boolean(shipmentId),
+    queryFn: () => api.get<{ shipment_id: string; status: string; checkpoints: ShipmentCheckpoint[] }>(
+      `/api/shipments/${shipmentId}/checkpoints`,
+    ),
+  });
 
 export function useOrderTransition(orderId: string | undefined) {
   const qc = useQueryClient();

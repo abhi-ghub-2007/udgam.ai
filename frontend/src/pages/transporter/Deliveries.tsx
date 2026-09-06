@@ -1,22 +1,32 @@
+/**
+ * The transporter's journey page (§6/§7/§8/§11).
+ *
+ * Route preview before starting, a farmer-confirmation gate before pickup can
+ * be marked, Start Journey (which begins OUR OWN live tracking first, then
+ * offers Google Maps navigation separately -- §22's mandatory distinction),
+ * and real checkpoints derived from the shipment's own timestamps.
+ */
 import { useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { useShipments, useUpdateShipmentStatus } from '@/hooks/queries';
-import { ApiError } from '@/services/api/client';
 import {
-  Badge, Button, Card, CardSkeleton, EmptyState, ErrorState, PageHeader,
+  useShipments, useShipmentCheckpoints, useUpdateShipmentStatus,
+} from '@/hooks/queries';
+import { useLiveLocationBroadcast } from '@/hooks/useLiveLocationBroadcast';
+import { ApiError } from '@/services/api/client';
+import { buildNavigationUrl } from '@/services/maps/navigationUrl';
+import { RoutePreview } from '@/components/maps/RoutePreview';
+import {
+  Badge, Button, Card, CardSkeleton, CardTitle, EmptyState, ErrorState, PageHeader, cx,
 } from '@/components/ui';
 import { ShipmentTimeline } from '@/components/ShipmentTimeline';
 import { money, number, date } from '@/utils/format';
 import type { ShipmentStatus } from '@/types/api';
 
-/** The one legal next step from where the shipment is now. This page used to
-    be read-only -- status could only ever be 'assigned' or 'created' forever,
-    because nothing anywhere called POST /shipments/{id}/status. */
-const NEXT_STEP: Partial<Record<ShipmentStatus, { to: 'picked_up' | 'in_transit' | 'delivered'; labelKey: string }>> = {
-  assigned: { to: 'picked_up', labelKey: 'market.confirm_pickup' },
-  picked_up: { to: 'in_transit', labelKey: 'market.mark_in_transit' },
-  in_transit: { to: 'delivered', labelKey: 'market.mark_delivered' },
+const NEXT_STEP: Partial<Record<ShipmentStatus, { to: 'picked_up' | 'in_transit' | 'arrived'; labelKey: string }>> = {
+  assigned: { to: 'picked_up', labelKey: 'market.i_have_picked_up' },
+  picked_up: { to: 'in_transit', labelKey: 'market.start_journey' },
+  in_transit: { to: 'arrived', labelKey: 'market.mark_arrived' },
 };
 
 export default function Deliveries() {
@@ -24,11 +34,12 @@ export default function Deliveries() {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const q = useShipments();
-  // Hooks must run unconditionally, so this is called before any early
-  // return below -- mutating a shipment that may not exist yet is harmless
-  // since the button using it only renders once `s` is confirmed real.
+  const checkpoints = useShipmentCheckpoints(id);
   const update = useUpdateShipmentStatus(id);
   const [error, setError] = useState<string | null>(null);
+
+  const s = (q.data ?? []).find((x) => x.id === id);
+  const tracking = useLiveLocationBroadcast(id, s?.status === 'in_transit');
 
   if (q.isLoading) return <CardSkeleton lines={5} />;
   if (q.isError) {
@@ -39,8 +50,6 @@ export default function Deliveries() {
       />
     );
   }
-
-  const s = (q.data ?? []).find((x) => x.id === id);
   if (!s) {
     return (
       <div className="space-y-6">
@@ -52,6 +61,8 @@ export default function Deliveries() {
 
   const dist = s.actual_distance_km ?? s.planned_distance_km;
   const step = NEXT_STEP[s.status];
+  const hasCoords = s.pickup_lat != null && s.pickup_lon != null && s.drop_lat != null && s.drop_lon != null;
+  const pickupNotConfirmed = s.status === 'assigned' && !s.pickup_confirmed_at;
 
   const onAdvance = async () => {
     if (!step) return;
@@ -76,17 +87,23 @@ export default function Deliveries() {
 
         <ShipmentTimeline status={s.status} />
 
+        {/* Real checkpoints, from the shipment's own timestamps -- never a
+            frontend-only fake state (§11). */}
+        {checkpoints.data && (
+          <ul className="flex flex-wrap gap-x-4 gap-y-1 border-t border-line-card pt-3 text-label">
+            {checkpoints.data.checkpoints.map((c) => (
+              <li key={c.code} className={cx(c.done ? 'text-primary' : 'text-ink-muted')}>
+                {c.done ? '✓' : '○'} {t(`market.checkpoint_${c.code}`)}
+              </li>
+            ))}
+          </ul>
+        )}
+
         <dl className="grid gap-3 border-t border-line-card pt-4 sm:grid-cols-2">
           {dist != null && (
             <div>
               <dt className="text-label text-ink-muted">{t('market.distance_label')}</dt>
               <dd className="tnum text-body font-semibold">{number(Math.round(dist))} km</dd>
-            </div>
-          )}
-          {s.eta_at && (
-            <div>
-              <dt className="text-label text-ink-muted">{t('market.eta')}</dt>
-              <dd className="text-body font-semibold">{date(s.eta_at)}</dd>
             </div>
           )}
           {s.picked_up_at && (
@@ -103,6 +120,49 @@ export default function Deliveries() {
           )}
         </dl>
 
+        {/* Preview the actual road route before committing to the job. */}
+        {hasCoords && s.status !== 'delivered' && s.status !== 'cancelled' && (
+          <div className="border-t border-line-card pt-4">
+            <CardTitle className="text-body">{t('market.journey_preview')}</CardTitle>
+            <div className="mt-2">
+              <RoutePreview
+                pickup={{ lat: s.pickup_lat!, lon: s.pickup_lon! }}
+                drop={{ lat: s.drop_lat!, lon: s.drop_lon! }}
+              />
+            </div>
+          </div>
+        )}
+
+        {pickupNotConfirmed && (
+          <p className="rounded-md bg-surface-low px-3 py-2 text-label text-ink-muted">
+            {t('market.awaiting_farmer_pickup_confirmation')}
+          </p>
+        )}
+
+        {s.status === 'in_transit' && (
+          <div className="space-y-2 border-t border-line-card pt-4">
+            <p className="text-label text-ink-muted">
+              {tracking.status === 'active' && t('market.tracking_active')}
+              {tracking.status === 'requesting' && t('market.tracking_requesting')}
+              {tracking.status === 'denied' && t('market.tracking_denied')}
+              {tracking.status === 'unavailable' && t('market.tracking_unavailable')}
+              {tracking.status === 'error' && t('market.tracking_error')}
+            </p>
+            {hasCoords && (
+              <a
+                href={buildNavigationUrl(
+                  { lat: s.current_lat ?? s.pickup_lat!, lon: s.current_lon ?? s.pickup_lon! },
+                  { lat: s.drop_lat!, lon: s.drop_lon! },
+                )}
+                target="_blank" rel="noopener noreferrer"
+                className="inline-block min-h-tap rounded-md bg-secondary px-5 py-3 text-body font-semibold text-secondary-on"
+              >
+                {t('market.navigate_with_maps')}
+              </a>
+            )}
+          </div>
+        )}
+
         {error && (
           <p role="alert" className="rounded-md bg-danger-container px-3 py-2 text-body text-danger-on-container">
             {error}
@@ -110,7 +170,7 @@ export default function Deliveries() {
         )}
 
         <div className="flex flex-wrap gap-3">
-          {step && (
+          {step && !(step.to === 'picked_up' && pickupNotConfirmed) && (
             <Button loading={update.isPending} onClick={() => void onAdvance()}>
               {t(step.labelKey)}
             </Button>

@@ -25,7 +25,8 @@
     "km": "कि.मी.",
     "none_yet": "अजून काही नाही",
     "network_error": "नेटवर्क त्रुटी. कृपया आपले कनेक्शन तपासा",
-    "delete": "हटवा"
+    "delete": "हटवा",
+    "min": "मिनिट"
   },
   "nav": {
     "primary": "मुख्य नेव्हिगेशन",
@@ -206,7 +207,8 @@
     "amount_to_pay": "देय रक्कम",
     "payment_held": "पैसे सुरक्षित",
     "pay_is_mock": "डेमो पेमेंट. खरे पैसे हलत नाहीत; हे फक्त ऑर्डर पेड म्हणून चिन्हांकित करते जेणेकरून वाहतूक निश्चित करता येईल.",
-    "awaiting_payment": "खरेदीदाराच्या पैशांची वाट"
+    "awaiting_payment": "खरेदीदाराच्या पैशांची वाट",
+    "confirm_delivery": "डिलिव्हरीची पुष्टी करा"
   },
   "landing": {
     "nav_platform": "प्लॅटफॉर्म",
@@ -435,7 +437,20 @@
     "ranked_note": "खर्च, नंतर अंतर या क्रमाने. रेटिंग फक्त मदतीसाठी दाखवली आहे, ती हा क्रम बदलत नाही.",
     "awaiting_transporter": "वाहतूकदाराच्या स्वीकृतीची वाट",
     "awaiting_transporter_body": "{n} विनंत्या पाठवल्या. स्वीकारल्या किंवा नाकारल्या जाताच तुम्हाला कळवले जाईल.",
-    "transport_assigned": "वाहतूकदार ठरला"
+    "transport_assigned": "वाहतूकदार ठरला",
+    "i_have_picked_up": "मी उत्पादन उचलले आहे",
+    "start_journey": "प्रवास सुरू करा",
+    "mark_arrived": "गंतव्यस्थानी पोहोचल्याचे नोंदवा",
+    "journey_preview": "प्रवास पूर्वावलोकन",
+    "awaiting_farmer_pickup_confirmation": "शेतकऱ्याच्या पुष्टीची वाट पाहत आहोत की उत्पादन तयार आहे, त्यानंतरच तुम्ही हे उचलले असे नोंदवू शकाल.",
+    "navigate_with_maps": "Google Maps ने मार्ग पहा",
+    "transport_tracking": "वाहतूक ट्रॅकिंग",
+    "confirm_pickup_hint": "उत्पादन पॅक होऊन सोपवण्यास तयार असल्यावर पुष्टी करा. यानंतरच वाहतूकदार प्रवास सुरू करू शकेल.",
+    "live_connected": "लाइव्ह",
+    "live_disconnected": "पुन्हा जोडत आहे…",
+    "live_connecting": "जोडत आहे…",
+    "last_updated": "अद्ययावत केले",
+    "arrived_confirm_hint": "वाहतूकदार डिलिव्हरी ठिकाणी पोहोचला आहे. उत्पादन मिळाल्यावर व तपासल्यावर पुष्टी करा."
   },
   "decide": {
     "title": "बाजार निर्णय केंद्र",
@@ -539,6 +554,22 @@
     "offer_closed_title": "विनंती आता उपलब्ध नाही",
     "offer_closed_body": "ऑर्डर {order_no} चे माल दुसऱ्या वाहतूकदाराने घेतले.",
     "review_received_title": "तुम्हाला पुनरावलोकन मिळाले",
-    "review_received_body": "ऑर्डर {order_no} वर {rating} स्टार."
+    "review_received_body": "ऑर्डर {order_no} वर {rating} स्टार.",
+    "journey_started_title": "वाहतूकदार वाटेत आहे",
+    "journey_started_body": "ऑर्डर {order_no} साठी वाहतूकदाराने प्रवास सुरू केला आहे.",
+    "arrived_title": "वाहतूकदार पोहोचला",
+    "arrived_body": "ऑर्डर {order_no} साठी वाहतूकदार तुमच्या डिलिव्हरी ठिकाणाजवळ आहे किंवा पोहोचला आहे.",
+    "arrived_body_farmer": "ऑर्डर {order_no} साठी वाहतूकदार गंतव्यस्थानाजवळ आहे किंवा पोहोचला आहे.",
+    "pickup_confirmed_title": "पिकअपची पुष्टी झाली",
+    "pickup_confirmed_body": "ऑर्डर {order_no} साठी शेतकऱ्याने पिकअपची पुष्टी केली आहे. आता तुम्ही प्रवास सुरू करू शकता.",
+    "delivery_confirmed_title": "डिलिव्हरीची पुष्टी झाली",
+    "delivery_confirmed_body_transporter": "ऑर्डर {order_no} साठी खरेदीदाराने डिलिव्हरीची पुष्टी केली आहे.",
+    "delivery_confirmed_body_farmer": "ऑर्डर {order_no} साठी खरेदीदाराने डिलिव्हरीची पुष्टी केली आहे."
+  },
+  "maps": {
+    "not_configured": "या सेटअपमध्ये नकाशा अजून उपलब्ध नाही.",
+    "failed_to_load": "नकाशा लोड होऊ शकला नाही. कनेक्शन तपासा आणि पुन्हा प्रयत्न करा.",
+    "search_hint": "जागा शोधा, किंवा नकाशावर टॅप करून पिन लावा.",
+    "route_unavailable": "सध्या मार्ग काढता आला नाही."
   }
 }

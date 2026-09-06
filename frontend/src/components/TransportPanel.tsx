@@ -18,6 +18,7 @@ import { useTranslation } from 'react-i18next';
 import {
   useSaveShipmentDetails, useSendTransportOffers, useTransportOptions,
 } from '@/hooks/queries';
+import { LocationPicker, type PickedLocation } from '@/components/maps/LocationPicker';
 import { ApiError } from '@/services/api/client';
 import {
   Badge, Button, Card, CardTitle, EmptyState, Field, Input, Textarea, cx,
@@ -100,19 +101,31 @@ export function TransportPanel({ order, shipment, canArrange }: Props) {
   const [picked, setPicked] = useState<string[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [form, setForm] = useState({
-    pickup_address: shipment?.pickup_address ?? '',
     pickup_contact_name: shipment?.pickup_contact_name ?? '',
     pickup_contact_phone: shipment?.pickup_contact_phone ?? '',
     pickup_from: shipment?.pickup_from?.slice(0, 16) ?? '',
     pickup_until: shipment?.pickup_until?.slice(0, 16) ?? '',
     pickup_instructions: shipment?.pickup_instructions ?? '',
-    drop_address: shipment?.drop_address ?? '',
     drop_contact_name: shipment?.drop_contact_name ?? '',
     drop_contact_phone: shipment?.drop_contact_phone ?? '',
     deliver_by: shipment?.deliver_by?.slice(0, 16) ?? '',
     drop_instructions: shipment?.drop_instructions ?? '',
     transport_paid_by: shipment?.transport_paid_by ?? order.logistics_arranged_by ?? 'buyer',
   });
+  // Selected via Google Places (§5) -- address alone, the previous design,
+  // gave route/distance/tracking/geofencing nothing to compute from.
+  const [pickupLoc, setPickupLoc] = useState<PickedLocation | null>(
+    shipment?.pickup_address
+      ? { address: shipment.pickup_address, lat: shipment.pickup_lat ?? 0,
+          lon: shipment.pickup_lon ?? 0, place_id: shipment.pickup_place_id }
+      : null,
+  );
+  const [dropLoc, setDropLoc] = useState<PickedLocation | null>(
+    shipment?.drop_address
+      ? { address: shipment.drop_address, lat: shipment.drop_lat ?? 0,
+          lon: shipment.drop_lon ?? 0, place_id: shipment.drop_place_id }
+      : null,
+  );
 
   const set = (k: keyof typeof form) => (v: string) =>
     setForm((p) => ({ ...p, [k]: v }));
@@ -121,9 +134,17 @@ export function TransportPanel({ order, shipment, canArrange }: Props) {
 
   const onSave = async () => {
     setError(null);
+    if (!pickupLoc || !dropLoc) {
+      setError(t('market.err_pickup_drop_required'));
+      return;
+    }
     try {
       await save.mutateAsync({
         ...form,
+        pickup_address: pickupLoc.address, pickup_lat: pickupLoc.lat,
+        pickup_lon: pickupLoc.lon, pickup_place_id: pickupLoc.place_id,
+        drop_address: dropLoc.address, drop_lat: dropLoc.lat,
+        drop_lon: dropLoc.lon, drop_place_id: dropLoc.place_id,
         pickup_from: iso(form.pickup_from),
         pickup_until: iso(form.pickup_until),
         deliver_by: iso(form.deliver_by),
@@ -225,8 +246,10 @@ export function TransportPanel({ order, shipment, canArrange }: Props) {
       {canArrange && !assigned && (editing || !hasDetails) && (
         <div className="space-y-4 border-t border-line-card pt-4">
           <Field label={t('market.pickup_address')} htmlFor="pk-addr" required>
-            <Input id="pk-addr" value={form.pickup_address}
-                   onChange={(e) => set('pickup_address')(e.target.value)} />
+            <LocationPicker
+              id="pk-addr" value={pickupLoc} onChange={setPickupLoc}
+              placeholder={t('maps.search_hint')}
+            />
           </Field>
           <div className="grid gap-4 sm:grid-cols-2">
             <Field label={t('market.contact_name')} htmlFor="pk-name">
@@ -252,8 +275,10 @@ export function TransportPanel({ order, shipment, canArrange }: Props) {
           </Field>
 
           <Field label={t('market.drop_address')} htmlFor="dp-addr" required>
-            <Input id="dp-addr" value={form.drop_address}
-                   onChange={(e) => set('drop_address')(e.target.value)} />
+            <LocationPicker
+              id="dp-addr" value={dropLoc} onChange={setDropLoc}
+              placeholder={t('maps.search_hint')}
+            />
           </Field>
           <div className="grid gap-4 sm:grid-cols-2">
             <Field label={t('market.contact_name')} htmlFor="dp-name">

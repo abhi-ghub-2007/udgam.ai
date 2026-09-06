@@ -31,7 +31,12 @@ TRANSITIONS: dict[str, dict[str, list[str]]] = {
                             "CANCELLED": ["buyer"]},
     "LOGISTICS_ASSIGNED": {"PICKED_UP": ["transporter"], "CANCELLED": ["buyer", "farmer"]},
     "PICKED_UP":          {"IN_TRANSIT": ["transporter"], "CANCELLED": ["buyer", "farmer"]},
-    "IN_TRANSIT":         {"DELIVERED": ["transporter"]},
+    # The buyer confirms delivery, not the transporter (confirm-delivery in
+    # transport.py): a transporter reaching the destination (shipment status
+    # 'arrived', reported by them or a GPS geofence) is not the same fact as
+    # the buyer having actually received the goods, and only the buyer's own
+    # explicit confirmation may be trusted for that.
+    "IN_TRANSIT":         {"DELIVERED": ["buyer"]},
     "DELIVERED":          {"CLOSED": ["buyer", "farmer"], "DISPUTED": ["buyer"]},
     "CLOSED":             {},
     "CANCELLED":          {},

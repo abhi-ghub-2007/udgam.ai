@@ -66,6 +66,10 @@ async def get_config():
         "languages": ["en", "hi", "mr"],
         "app_env": settings.APP_ENV,
         "configured": settings.supabase_configured,
+        # Empty string, not omitted, when unset -- the frontend loader checks
+        # for a non-empty string and renders a "Maps not configured"
+        # fallback rather than crashing on a missing key (spec section 21).
+        "google_maps_api_key": settings.GOOGLE_MAPS_API_KEY,
     }
 
 

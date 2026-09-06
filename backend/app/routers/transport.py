@@ -47,7 +47,14 @@ class CapacityIn(BaseModel):
 
 
 class ShipmentUpdateIn(BaseModel):
-    status: str = Field(pattern="^(assigned|picked_up|in_transit|delivered|cancelled)$")
+    # 'delivered' is deliberately NOT settable here: a transporter reaching
+    # the destination is not the same fact as the buyer having received the
+    # goods. That transition only happens through POST .../confirm-delivery,
+    # by the buyer. 'arrived' is reachable two ways -- automatically, from a
+    # location update that crosses the geofence (see _maybe_mark_arrived),
+    # or manually here, for when GPS was denied/unavailable and the
+    # transporter has to say so themselves (§21).
+    status: str = Field(pattern="^(picked_up|in_transit|arrived|cancelled)$")
     note: str | None = None
 
 
@@ -65,18 +72,44 @@ class ShipmentDetailsIn(BaseModel):
     pickup_from: str | None = None            # ISO datetime — window opens
     pickup_until: str | None = None           # ISO datetime — window closes
     pickup_instructions: str | None = Field(default=None, max_length=500)
+    # From Google Places Autocomplete, stored as given -- never re-geocoded.
+    pickup_lat: float | None = Field(default=None, ge=-90, le=90)
+    pickup_lon: float | None = Field(default=None, ge=-180, le=180)
+    pickup_place_id: str | None = Field(default=None, max_length=200)
 
     drop_address: str = Field(min_length=3, max_length=500)
     drop_contact_name: str | None = Field(default=None, max_length=120)
     drop_contact_phone: str | None = Field(default=None, max_length=20)
     deliver_by: str | None = None             # ISO datetime — deadline
     drop_instructions: str | None = Field(default=None, max_length=500)
+    drop_lat: float | None = Field(default=None, ge=-90, le=90)
+    drop_lon: float | None = Field(default=None, ge=-180, le=180)
+    drop_place_id: str | None = Field(default=None, max_length=200)
 
     # Who ARRANGES is orders.logistics_arranged_by. Who PAYS is this, and the
     # two are separate decisions (§4B) — a farmer may arrange a lorry the buyer
     # settles for. Defaults to the arranger only because that is the common
     # case, never because they are the same thing.
     transport_paid_by: str | None = Field(default=None, pattern="^(farmer|buyer)$")
+
+
+class LocationUpdateIn(BaseModel):
+    """One reading from the transporter's device (§8/§9)."""
+
+    lat: float = Field(ge=-90, le=90)
+    lon: float = Field(ge=-180, le=180)
+    accuracy_m: float | None = Field(default=None, ge=0)
+    heading: float | None = Field(default=None, ge=0, lt=360)
+    speed_kmph: float | None = Field(default=None, ge=0)
+
+
+# Within this many metres of the drop point, the shipment auto-marks
+# 'arrived'. Loose enough for consumer GPS accuracy in the countryside,
+# tight enough not to fire from the next village over.
+ARRIVAL_GEOFENCE_M = 300
+# The frontend already throttles; this is the same guarantee enforced
+# server-side; a client cannot be trusted to actually rate-limit itself.
+MIN_LOCATION_UPDATE_INTERVAL_S = 4
 
 
 class OfferCreateIn(BaseModel):
@@ -284,11 +317,17 @@ async def upsert_shipment_details(order_id: str, body: ShipmentDetailsIn,
         "pickup_from": pickup_from,
         "pickup_until": pickup_until,
         "pickup_instructions": body.pickup_instructions,
+        "pickup_lat": body.pickup_lat,
+        "pickup_lon": body.pickup_lon,
+        "pickup_place_id": body.pickup_place_id,
         "drop_address": body.drop_address.strip(),
         "drop_contact_name": body.drop_contact_name,
         "drop_contact_phone": body.drop_contact_phone,
         "deliver_by": deliver_by,
         "drop_instructions": body.drop_instructions,
+        "drop_lat": body.drop_lat,
+        "drop_lon": body.drop_lon,
+        "drop_place_id": body.drop_place_id,
         "cargo_kg": cargo,
         "transport_paid_by": body.transport_paid_by or order["logistics_arranged_by"],
     }
@@ -742,41 +781,256 @@ def _retire_losing_offers(shipment_id: str, winning_offer_id: str,
 @router.post("/shipments/{shipment_id}/status", dependencies=[require_transporter])
 async def update_shipment_status(shipment_id: str, body: ShipmentUpdateIn,
                                   user: CurrentUserDep):
-    """Transporter updates shipment status, which propagates to order status."""
+    """Transporter advances the shipment: picked_up -> in_transit -> arrived.
+
+    Farmer/buyer confirmation gates the two ends of this chain, not the
+    transporter alone: picked_up requires the farmer's pickup_confirmed_at
+    (§3/§13 -- the transporter used to control every transition with no
+    second actor at all), and 'delivered' isn't reachable here regardless of
+    what the transporter reports -- only the buyer's own confirm-delivery
+    call sets it.
+    """
     ship = user.db.table("shipments").select("*") \
         .eq("id", shipment_id).eq("transporter_id", user.id).limit(1).execute()
     if not ship.data:
         raise NotFound("Shipment not found or not yours.")
     s = ship.data[0]
 
+    if body.status == "picked_up" and not s.get("pickup_confirmed_at"):
+        raise ValidationFailed(
+            "The farmer has not confirmed the pickup yet. "
+            "You will be able to mark this picked up once they do."
+        )
+
     now = datetime.now(timezone.utc).isoformat()
     patch: dict = {"status": body.status}
     if body.status == "picked_up":
         patch["picked_up_at"] = now
-    elif body.status == "delivered":
-        patch["delivered_at"] = now
+    elif body.status == "in_transit":
+        patch["journey_started_at"] = now
+        patch["is_tracking"] = True
+    elif body.status == "arrived":
+        patch["arrived_at"] = now
+        patch["is_tracking"] = False
+    elif body.status == "cancelled":
+        patch["is_tracking"] = False
 
     user.db.table("shipments").update(patch).eq("id", shipment_id).execute()
 
-    # Map shipment status → order status
-    ORDER_MAP = {
-        "picked_up": "PICKED_UP",
-        "in_transit": "IN_TRANSIT",
-        "delivered": "DELIVERED",
-    }
-    if body.status in ORDER_MAP:
+    order = user.db.table("orders").select("id,status,order_no,buyer_id,farmer_id") \
+        .eq("id", s["order_id"]).limit(1).execute()
+    order_row = order.data[0] if order.data else None
+
+    # Map shipment status → order status. 'arrived' deliberately has no
+    # order-status counterpart: the order stays IN_TRANSIT until the buyer's
+    # own confirm-delivery call, which is the only path to DELIVERED.
+    ORDER_MAP = {"picked_up": "PICKED_UP", "in_transit": "IN_TRANSIT"}
+    if body.status in ORDER_MAP and order_row:
         order_status = ORDER_MAP[body.status]
-        order = user.db.table("orders").select("id,status").eq("id", s["order_id"]).limit(1).execute()
-        if order.data:
-            from_st = order.data[0]["status"]
-            # Validate state machine before updating
-            from ..services.state_machine import validate_transition
-            validate_transition(from_st, order_status, "transporter")
-            user.db.table("orders").update({"status": order_status}).eq("id", s["order_id"]).execute()
-            record_transition(user.db, s["order_id"], from_st, order_status,
-                              user.id, "transporter", body.note)
+        from_st = order_row["status"]
+        validate_transition(from_st, order_status, "transporter")
+        user.db.table("orders").update({"status": order_status}).eq("id", s["order_id"]).execute()
+        record_transition(user.db, s["order_id"], from_st, order_status,
+                          user.id, "transporter", body.note)
+
+    if order_row and body.status == "in_transit":
+        for uid in (order_row.get("buyer_id"), order_row.get("farmer_id")):
+            if uid:
+                notify(uid, "journey_started", "notif.journey_started_title",
+                       "notif.journey_started_body",
+                       params={"order_no": order_row.get("order_no") or ""},
+                       entity_type="order", entity_id=s["order_id"])
+    elif order_row and body.status == "arrived":
+        if order_row.get("buyer_id"):
+            notify(order_row["buyer_id"], "arrived_at_destination",
+                   "notif.arrived_title", "notif.arrived_body",
+                   params={"order_no": order_row.get("order_no") or ""},
+                   entity_type="order", entity_id=s["order_id"])
+        if order_row.get("farmer_id"):
+            notify(order_row["farmer_id"], "arrived_at_destination",
+                   "notif.arrived_title", "notif.arrived_body_farmer",
+                   params={"order_no": order_row.get("order_no") or ""},
+                   entity_type="order", entity_id=s["order_id"])
 
     return {"ok": True, "status": body.status}
+
+
+@router.post("/shipments/{shipment_id}/confirm-pickup")
+async def confirm_pickup(shipment_id: str, user: CurrentUserDep):
+    """The farmer says the produce is ready and handed over (§3).
+
+    This is the gate `update_shipment_status` checks before a transporter can
+    mark 'picked_up' -- without it, nothing stopped the transporter alone
+    from starting the journey the instant they were assigned.
+    """
+    ship = user.db.table("shipments").select("*, orders(id,status,farmer_id,order_no)") \
+        .eq("id", shipment_id).limit(1).execute().data
+    if not ship:
+        raise NotFound("Shipment not found.")
+    s = ship[0]
+    order = s.pop("orders", None) or {}
+
+    if order.get("farmer_id") != user.id:
+        raise Forbidden("Only the farmer on this order can confirm pickup.")
+    if s["status"] != "assigned":
+        raise ValidationFailed(f"This shipment is {s['status']}, not ready to confirm.")
+    if s.get("pickup_confirmed_at"):
+        raise ValidationFailed("Pickup was already confirmed.")
+
+    now = datetime.now(timezone.utc).isoformat()
+    user.db.table("shipments").update({
+        "pickup_confirmed_at": now, "pickup_confirmed_by": user.id,
+    }).eq("id", shipment_id).execute()
+
+    if s.get("transporter_id"):
+        notify(s["transporter_id"], "pickup_confirmed",
+               "notif.pickup_confirmed_title", "notif.pickup_confirmed_body",
+               params={"order_no": order.get("order_no") or ""},
+               entity_type="shipment", entity_id=shipment_id)
+
+    return {"ok": True, "pickup_confirmed_at": now}
+
+
+@router.post("/shipments/{shipment_id}/confirm-delivery")
+async def confirm_delivery(shipment_id: str, user: CurrentUserDep):
+    """The buyer says the goods actually arrived (§13).
+
+    The transporter reaching the destination (status 'arrived') is a GPS fact
+    the transporter or a geofence can report; it is never allowed to become
+    'delivered' by itself. Only this call, by the buyer, does that -- and it
+    is what the whole downstream chain (payment, order CLOSED, reviews)
+    depends on being genuine.
+    """
+    ship = user.db.table("shipments").select("*, orders(id,status,buyer_id,farmer_id,order_no)") \
+        .eq("id", shipment_id).limit(1).execute().data
+    if not ship:
+        raise NotFound("Shipment not found.")
+    s = ship[0]
+    order = s.pop("orders", None) or {}
+
+    if order.get("buyer_id") != user.id:
+        raise Forbidden("Only the buyer on this order can confirm delivery.")
+    if s["status"] not in ("arrived", "in_transit"):
+        raise ValidationFailed(f"This shipment is {s['status']}, nothing to confirm yet.")
+
+    now = datetime.now(timezone.utc).isoformat()
+    user.db.table("shipments").update({
+        "status": "delivered", "delivered_at": now, "is_tracking": False,
+    }).eq("id", shipment_id).execute()
+
+    order_row = order
+    if order_row.get("status"):
+        validate_transition(order_row["status"], "DELIVERED", "buyer")
+        user.db.table("orders").update({"status": "DELIVERED"}).eq("id", order["id"]).execute()
+        record_transition(user.db, order["id"], order_row["status"], "DELIVERED",
+                          user.id, "buyer", "Delivery confirmed by buyer.")
+
+    if s.get("transporter_id"):
+        notify(s["transporter_id"], "delivery_confirmed",
+               "notif.delivery_confirmed_title", "notif.delivery_confirmed_body_transporter",
+               params={"order_no": order.get("order_no") or ""},
+               entity_type="order", entity_id=order["id"])
+    if order.get("farmer_id"):
+        notify(order["farmer_id"], "delivery_confirmed",
+               "notif.delivery_confirmed_title", "notif.delivery_confirmed_body_farmer",
+               params={"order_no": order.get("order_no") or ""},
+               entity_type="order", entity_id=order["id"])
+
+    return {"ok": True, "status": "delivered"}
+
+
+@router.post("/shipments/{shipment_id}/location", dependencies=[require_transporter])
+async def update_location(shipment_id: str, body: LocationUpdateIn, user: CurrentUserDep):
+    """One GPS reading from the transporter's own device (§8/§9).
+
+    Writes both the fast-path columns on `shipments` (what the live map reads)
+    and a row in `shipment_locations` (the history trail that table already
+    had RLS for and no writer). Throttled server-side -- a compromised or
+    buggy client cannot flood this regardless of what the frontend intends.
+    """
+    ship = user.db.table("shipments").select("id,status,location_updated_at,drop_lat,drop_lon,order_id") \
+        .eq("id", shipment_id).eq("transporter_id", user.id).limit(1).execute().data
+    if not ship:
+        raise NotFound("Shipment not found or not yours.")
+    s = ship[0]
+    if s["status"] not in ("picked_up", "in_transit"):
+        raise ValidationFailed("Location updates are only accepted while a shipment is under way.")
+
+    now = datetime.now(timezone.utc)
+    last = s.get("location_updated_at")
+    if last:
+        last_dt = datetime.fromisoformat(last.replace("Z", "+00:00"))
+        if (now - last_dt).total_seconds() < MIN_LOCATION_UPDATE_INTERVAL_S:
+            return {"ok": True, "throttled": True}
+
+    patch = {
+        "current_lat": body.lat, "current_lon": body.lon,
+        "current_heading": body.heading, "current_speed_kmph": body.speed_kmph,
+        "current_accuracy_m": body.accuracy_m,
+        "location_updated_at": now.isoformat(), "is_tracking": True,
+    }
+
+    # Auto-detect arrival from GPS (§11). Idempotent: a shipment already
+    # 'arrived' or beyond does not get re-notified on every subsequent ping
+    # inside the geofence.
+    arrived_now = False
+    if s["status"] == "in_transit" and s.get("drop_lat") is not None and s.get("drop_lon") is not None:
+        distance_km = haversine(body.lat, body.lon, s["drop_lat"], s["drop_lon"])
+        if distance_km * 1000 <= ARRIVAL_GEOFENCE_M:
+            patch["status"] = "arrived"
+            patch["arrived_at"] = now.isoformat()
+            arrived_now = True
+
+    user.db.table("shipments").update(patch).eq("id", shipment_id).execute()
+    user.db.table("shipment_locations").insert({
+        "shipment_id": shipment_id, "lat": body.lat, "lon": body.lon,
+        "speed_kmph": body.speed_kmph, "heading": body.heading,
+        "accuracy_m": body.accuracy_m,
+    }).execute()
+
+    if arrived_now:
+        order = user.db.table("orders").select("buyer_id,farmer_id,order_no") \
+            .eq("id", s["order_id"]).limit(1).execute().data
+        if order:
+            o = order[0]
+            if o.get("buyer_id"):
+                notify(o["buyer_id"], "arrived_at_destination", "notif.arrived_title",
+                       "notif.arrived_body", params={"order_no": o.get("order_no") or ""},
+                       entity_type="order", entity_id=s["order_id"])
+            if o.get("farmer_id"):
+                notify(o["farmer_id"], "arrived_at_destination", "notif.arrived_title",
+                       "notif.arrived_body_farmer", params={"order_no": o.get("order_no") or ""},
+                       entity_type="order", entity_id=s["order_id"])
+
+    return {"ok": True, "arrived": arrived_now}
+
+
+@router.get("/shipments/{shipment_id}/checkpoints")
+async def shipment_checkpoints(shipment_id: str, user: CurrentUserDep):
+    """The journey's checkpoints, derived from real timestamps on the
+    shipment (§11) -- never a frontend-only fake state. RLS on the SELECT
+    below (shipments_select) is what actually authorises this: only the
+    transporter or an order participant can read the row at all.
+    """
+    s = user.db.table("shipments").select(
+        "id,status,created_at,pickup_confirmed_at,picked_up_at,journey_started_at,"
+        "arrived_at,delivered_at"
+    ).eq("id", shipment_id).limit(1).execute().data
+    if not s:
+        raise NotFound("Shipment not found.")
+    s = s[0]
+
+    checkpoints = [
+        {"code": "created", "at": s["created_at"], "done": True},
+        {"code": "pickup_confirmed", "at": s.get("pickup_confirmed_at"),
+         "done": bool(s.get("pickup_confirmed_at"))},
+        {"code": "journey_started", "at": s.get("journey_started_at"),
+         "done": bool(s.get("journey_started_at"))},
+        {"code": "near_destination", "at": None, "done": False},  # ephemeral; not persisted
+        {"code": "arrived", "at": s.get("arrived_at"), "done": bool(s.get("arrived_at"))},
+        {"code": "delivered", "at": s.get("delivered_at"), "done": bool(s.get("delivered_at"))},
+    ]
+    return {"shipment_id": shipment_id, "status": s["status"], "checkpoints": checkpoints}
 
 
 # ---------------------------------------------------------------- route optimization

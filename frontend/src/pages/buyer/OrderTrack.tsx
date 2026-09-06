@@ -5,6 +5,7 @@ import { useAuth } from '@/services/auth/AuthProvider';
 import { OrderActions } from '@/components/OrderActions';
 import { PayOrder } from '@/components/PayOrder';
 import { TransportPanel } from '@/components/TransportPanel';
+import { TrackingPanel } from '@/components/TrackingPanel';
 import { ReputationPanel, ReviewPanel } from '@/components/Reputation';
 import { Badge, Button, Card, CardSkeleton, CardTitle, ErrorState, PageHeader, cx } from '@/components/ui';
 import { money, number, date } from '@/utils/format';
@@ -151,6 +152,18 @@ export default function OrderTrack() {
       {!terminal && o.status !== 'PLACED' && (
         <div className="max-w-2xl">
           <TransportPanel order={o} shipment={o.shipment ?? null} canArrange={canArrange} />
+        </div>
+      )}
+
+      {/* Farmer's pickup confirmation, buyer's delivery confirmation, and the
+          live tracking map -- all gated by role and the shipment's own
+          status, never by which button happens to be visible client-side. */}
+      {!terminal && o.shipment && (
+        <div className="max-w-2xl">
+          <TrackingPanel
+            shipment={o.shipment} isFarmer={isFarmer} isBuyer={!isFarmer}
+            onDone={() => void q.refetch()}
+          />
         </div>
       )}
 

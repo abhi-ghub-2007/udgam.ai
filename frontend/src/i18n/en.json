@@ -25,7 +25,8 @@
     "km": "km",
     "none_yet": "Nothing here yet",
     "network_error": "Network error. Please check your connection",
-    "delete": "Delete"
+    "delete": "Delete",
+    "min": "min"
   },
   "nav": {
     "primary": "Main navigation",
@@ -210,7 +211,8 @@
     "amount_to_pay": "Amount to pay",
     "payment_held": "Payment held",
     "pay_is_mock": "Demo payment. No real money moves; this only marks the order as paid so transport can be confirmed.",
-    "awaiting_payment": "Waiting for the buyer to pay"
+    "awaiting_payment": "Waiting for the buyer to pay",
+    "confirm_delivery": "Confirm delivery"
   },
   "landing": {
     "nav_platform": "Platform",
@@ -506,7 +508,35 @@
     "ranked_note": "Ordered by cost, then distance. Ratings are shown to help you choose and do not affect this order.",
     "awaiting_transporter": "Waiting for a transporter to accept",
     "awaiting_transporter_body": "{n} request(s) sent. You will be told as soon as one is accepted or declined.",
-    "transport_assigned": "Transporter assigned"
+    "transport_assigned": "Transporter assigned",
+    "waiting_for_location": "Waiting for the transporter's location…",
+    "i_have_picked_up": "I have picked up the produce",
+    "start_journey": "Start journey",
+    "mark_arrived": "Mark arrived at destination",
+    "journey_preview": "Journey preview",
+    "awaiting_farmer_pickup_confirmation": "Waiting for the farmer to confirm the produce is ready before you can mark this picked up.",
+    "tracking_active": "Sharing your live location.",
+    "tracking_requesting": "Asking for location access…",
+    "tracking_denied": "Location access was denied. Turn it on in your browser settings to share your live position.",
+    "tracking_unavailable": "This device does not support location sharing.",
+    "tracking_error": "Could not get your location right now. Retrying.",
+    "navigate_with_maps": "Navigate with Google Maps",
+    "checkpoint_created": "Order created",
+    "checkpoint_pickup_confirmed": "Pickup confirmed",
+    "checkpoint_journey_started": "Journey started",
+    "checkpoint_near_destination": "Near destination",
+    "checkpoint_arrived": "Arrived",
+    "checkpoint_delivered": "Delivered",
+    "transport_tracking": "Transport tracking",
+    "confirm_pickup_hint": "Confirm once the produce is packed and ready to hand over. The transporter can start the journey only after this.",
+    "pickup_confirmed_at": "Pickup confirmed {date}",
+    "live_connected": "Live",
+    "live_disconnected": "Reconnecting…",
+    "live_connecting": "Connecting…",
+    "last_updated": "Updated",
+    "arrived_confirm_hint": "The transporter has reached the delivery location. Confirm once you have received and checked the produce.",
+    "confirm_delivery_early_hint": "You can confirm delivery once the produce is actually in hand.",
+    "err_pickup_drop_required": "Pick both a pickup and a drop location on the map before saving."
   },
   "profile": {
     "rating_count": "from {n} ratings",
@@ -618,6 +648,22 @@
     "offer_closed_title": "Request no longer available",
     "offer_closed_body": "Another transporter took the load for order {order_no}.",
     "review_received_title": "You received a review",
-    "review_received_body": "{rating} stars on order {order_no}."
+    "review_received_body": "{rating} stars on order {order_no}.",
+    "journey_started_title": "Transporter is on the way",
+    "journey_started_body": "The transporter has started the journey for order {order_no}.",
+    "arrived_title": "Transporter has arrived",
+    "arrived_body": "The transporter is approaching or has reached your delivery location for order {order_no}.",
+    "arrived_body_farmer": "The transporter is approaching or has reached the destination for order {order_no}.",
+    "pickup_confirmed_title": "Pickup confirmed",
+    "pickup_confirmed_body": "The farmer confirmed the pickup for order {order_no}. You can start the journey.",
+    "delivery_confirmed_title": "Delivery confirmed",
+    "delivery_confirmed_body_transporter": "The buyer confirmed delivery for order {order_no}.",
+    "delivery_confirmed_body_farmer": "The buyer confirmed delivery for order {order_no}."
+  },
+  "maps": {
+    "not_configured": "Maps is not set up for this deployment yet.",
+    "failed_to_load": "Could not load the map. Check your connection and try again.",
+    "search_hint": "Search for a place, or tap the map to drop a pin.",
+    "route_unavailable": "Could not calculate the route right now."
   }
 }

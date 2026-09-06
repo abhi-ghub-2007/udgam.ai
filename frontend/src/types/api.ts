@@ -21,7 +21,7 @@ export type OrderStatus =
 
 export type ProductStatus = 'draft' | 'active' | 'reserved' | 'sold' | 'withdrawn';
 export type RequestStatus = 'open' | 'partially_fulfilled' | 'fulfilled' | 'cancelled' | 'expired';
-export type ShipmentStatus = 'created' | 'assigned' | 'picked_up' | 'in_transit' | 'delivered' | 'cancelled';
+export type ShipmentStatus = 'created' | 'assigned' | 'picked_up' | 'in_transit' | 'arrived' | 'delivered' | 'cancelled';
 
 // ---------------------------------------------------------------- auth
 export interface AppConfig {
@@ -30,6 +30,9 @@ export interface AppConfig {
   languages: Lang[];
   app_env: string;
   configured: boolean;
+  /** Empty string when Maps isn't configured -- callers must check for that,
+      not assume presence. */
+  google_maps_api_key: string;
 }
 
 export interface Profile {
@@ -225,17 +228,16 @@ export interface Order {
 export interface OrdersResponse { orders: Order[] }
 
 // ---------------------------------------------------------------- transport
-export interface Shipment {
-  id: string;
-  order_id: string;
+/** GET /api/shipments does `select("*")` on the same table ShipmentDetails
+    describes, so the list view carries every field the detail view does,
+    plus these list-only conveniences the router adds from the joined order.
+    One shape, not two independently-drifting ones. */
+export interface Shipment extends ShipmentDetails {
   order_no: string | null;
   order_status: OrderStatus | null;
-  status: ShipmentStatus;
   planned_distance_km: number | null;
   actual_distance_km: number | null;
   eta_at: string | null;
-  picked_up_at: string | null;
-  delivered_at: string | null;
   earnings_paise: number;
 }
 export interface ShipmentsResponse { shipments: Shipment[] }
@@ -255,17 +257,46 @@ export interface ShipmentDetails {
   pickup_from: string | null;
   pickup_until: string | null;
   pickup_instructions: string | null;
+  pickup_lat: number | null;
+  pickup_lon: number | null;
+  pickup_place_id: string | null;
   drop_address: string | null;
   drop_contact_name: string | null;
   drop_contact_phone: string | null;
   deliver_by: string | null;
   drop_instructions: string | null;
+  drop_lat: number | null;
+  drop_lon: number | null;
+  drop_place_id: string | null;
   /** An estimate from the carrier's own rate card. `earnings_paise` is the
       settled figure; there is no payment rail for transport yet, so the UI
       must not present this as money that moved. */
   transport_cost_estimate_paise: number | null;
   /** Who PAYS. Who ARRANGES is orders.logistics_arranged_by — different call. */
   transport_paid_by: 'farmer' | 'buyer' | null;
+
+  // Farmer/buyer confirmation gates (§3/§13) -- the two ends of the
+  // transporter-only chain that used to have no second actor at all.
+  pickup_confirmed_at: string | null;
+  pickup_confirmed_by: string | null;
+  journey_started_at: string | null;
+  /** Set once, automatically, when a location update crosses the geofence.
+      Reaching this point is NOT delivery -- confirm-delivery is separate. */
+  arrived_at: string | null;
+  picked_up_at?: string | null;
+  delivered_at?: string | null;
+
+  // Live position (§8/§9/§10) -- the fast-path columns a tracking map reads;
+  // updated by the transporter's own device via useLiveLocationBroadcast,
+  // pushed to viewers via useShipmentRealtime. Never populated by opening
+  // Google Maps for navigation, which has no channel back to this app.
+  current_lat: number | null;
+  current_lon: number | null;
+  current_heading: number | null;
+  current_speed_kmph: number | null;
+  current_accuracy_m: number | null;
+  location_updated_at: string | null;
+  is_tracking: boolean;
 }
 
 /** One transport listing that could carry a shipment. `reliability` is shown to
