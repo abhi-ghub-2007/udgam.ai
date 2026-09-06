@@ -1,17 +1,34 @@
+import { useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { useShipments } from '@/hooks/queries';
+import { useShipments, useUpdateShipmentStatus } from '@/hooks/queries';
+import { ApiError } from '@/services/api/client';
 import {
   Badge, Button, Card, CardSkeleton, EmptyState, ErrorState, PageHeader,
 } from '@/components/ui';
 import { ShipmentTimeline } from '@/components/ShipmentTimeline';
 import { money, number, date } from '@/utils/format';
+import type { ShipmentStatus } from '@/types/api';
+
+/** The one legal next step from where the shipment is now. This page used to
+    be read-only -- status could only ever be 'assigned' or 'created' forever,
+    because nothing anywhere called POST /shipments/{id}/status. */
+const NEXT_STEP: Partial<Record<ShipmentStatus, { to: 'picked_up' | 'in_transit' | 'delivered'; labelKey: string }>> = {
+  assigned: { to: 'picked_up', labelKey: 'market.confirm_pickup' },
+  picked_up: { to: 'in_transit', labelKey: 'market.mark_in_transit' },
+  in_transit: { to: 'delivered', labelKey: 'market.mark_delivered' },
+};
 
 export default function Deliveries() {
   const { id } = useParams();
   const { t } = useTranslation();
   const navigate = useNavigate();
   const q = useShipments();
+  // Hooks must run unconditionally, so this is called before any early
+  // return below -- mutating a shipment that may not exist yet is harmless
+  // since the button using it only renders once `s` is confirmed real.
+  const update = useUpdateShipmentStatus(id);
+  const [error, setError] = useState<string | null>(null);
 
   if (q.isLoading) return <CardSkeleton lines={5} />;
   if (q.isError) {
@@ -34,6 +51,17 @@ export default function Deliveries() {
   }
 
   const dist = s.actual_distance_km ?? s.planned_distance_km;
+  const step = NEXT_STEP[s.status];
+
+  const onAdvance = async () => {
+    if (!step) return;
+    setError(null);
+    try {
+      await update.mutateAsync(step.to);
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : t('common.error_body'));
+    }
+  };
 
   return (
     <div className="space-y-6">
@@ -75,7 +103,20 @@ export default function Deliveries() {
           )}
         </dl>
 
-        <Button variant="outline" onClick={() => navigate(-1)}>{t('common.back')}</Button>
+        {error && (
+          <p role="alert" className="rounded-md bg-danger-container px-3 py-2 text-body text-danger-on-container">
+            {error}
+          </p>
+        )}
+
+        <div className="flex flex-wrap gap-3">
+          {step && (
+            <Button loading={update.isPending} onClick={() => void onAdvance()}>
+              {t(step.labelKey)}
+            </Button>
+          )}
+          <Button variant="outline" onClick={() => navigate(-1)}>{t('common.back')}</Button>
+        </div>
       </Card>
     </div>
   );

@@ -205,7 +205,12 @@
     "accepted_ok": "Order accepted",
     "declined_ok": "Order declined",
     "awaiting_farmer": "Waiting for the farmer to accept",
-    "accept_hint": "Accepting reserves the produce for this buyer."
+    "accept_hint": "Accepting reserves the produce for this buyer.",
+    "pay_now": "Pay now",
+    "amount_to_pay": "Amount to pay",
+    "payment_held": "Payment held",
+    "pay_is_mock": "Demo payment. No real money moves; this only marks the order as paid so transport can be confirmed.",
+    "awaiting_payment": "Waiting for the buyer to pay"
   },
   "landing": {
     "nav_platform": "Platform",
@@ -455,6 +460,9 @@
       "delivered": "Delivered",
       "cancelled": "Cancelled"
     },
+    "confirm_pickup": "Confirm pickup",
+    "mark_in_transit": "Mark in transit",
+    "mark_delivered": "Mark delivered",
     "distance_label": "Distance",
     "eta": "Expected arrival",
     "request_status": {

@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { useOrder } from '@/hooks/queries';
 import { useAuth } from '@/services/auth/AuthProvider';
 import { OrderActions } from '@/components/OrderActions';
+import { PayOrder } from '@/components/PayOrder';
 import { TransportPanel } from '@/components/TransportPanel';
 import { ReputationPanel, ReviewPanel } from '@/components/Reputation';
 import { Badge, Button, Card, CardSkeleton, CardTitle, ErrorState, PageHeader, cx } from '@/components/ui';
@@ -134,6 +135,13 @@ export default function OrderTrack() {
         {isFarmer && <OrderActions order={o} onDone={() => void q.refetch()} />}
         {!isFarmer && o.status === 'PLACED' && (
           <p className="text-label text-ink-muted">{t('order.awaiting_farmer')}</p>
+        )}
+
+        {/* Once the farmer accepts, the buyer pays before transport can be
+            confirmed -- this is the step that was missing entirely. */}
+        {!isFarmer && <PayOrder order={o} onDone={() => void q.refetch()} />}
+        {isFarmer && o.status === 'ACCEPTED' && (
+          <p className="text-label text-ink-muted">{t('order.awaiting_payment')}</p>
         )}
 
         <Button variant="outline" onClick={() => navigate(-1)}>{t('common.back')}</Button>

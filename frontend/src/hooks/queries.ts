@@ -213,6 +213,36 @@ export function useCreateOrder() {
 /** Move an order along the state machine (accept, decline, cancel, close).
     The server re-checks that this role is allowed to make this move, so a
     button appearing is never what authorises it. */
+/** ACCEPTED -> PAYMENT_HELD. Mock provider (there is no real payment rail
+    yet), but this call is what actually exists for it -- nothing before this
+    fix gave the buyer a way to trigger it, so every order dead-ended here. */
+export function usePayOrder(orderId: string | undefined) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: () => api.post<unknown>(`/api/orders/${orderId}/pay`, {}),
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: ['orders'] });
+      void qc.invalidateQueries({ queryKey: ['dashboard'] });
+    },
+  });
+}
+
+/** assigned -> picked_up -> in_transit -> delivered. Each shipment status
+    change also advances the order's own status (transport.py
+    update_shipment_status), which is what eventually unlocks reviews. */
+export function useUpdateShipmentStatus(shipmentId: string | undefined) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (status: 'picked_up' | 'in_transit' | 'delivered') =>
+      api.post<{ ok: boolean; status: string }>(`/api/shipments/${shipmentId}/status`, { status }),
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: ['shipments'] });
+      void qc.invalidateQueries({ queryKey: ['orders'] });
+      void qc.invalidateQueries({ queryKey: ['dashboard'] });
+    },
+  });
+}
+
 export function useOrderTransition(orderId: string | undefined) {
   const qc = useQueryClient();
   return useMutation({
