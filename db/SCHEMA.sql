@@ -33,9 +33,28 @@ set local check_function_bodies = off;
 --
 -- WARNING: this DROPs every table in `public`. Safe now (fresh project); once
 -- real data exists, migrate instead of re-running this file.
+--
+-- IT IS NO LONGER SAFE, AND THIS FILE IS NO LONGER A "JUST RE-RUN IT" SCRIPT.
+-- The project has real data. Re-running the reset below destroyed the contents
+-- of every public table several times (profiles, orders, products, crops,
+-- prices, feedback -- auth.users survives, so logins outlive their own data),
+-- because scripts/apply_schema.py advertises the file as idempotent while the
+-- file opens by dropping the schema. Everything after this block genuinely is
+-- idempotent: `create table if not exists`, `create or replace function`,
+-- `drop policy if exists` + `create policy`, `add column if not exists`.
+--
+-- So the reset is now opt-in. Set SCHEMA_ALLOW_DESTRUCTIVE_RESET=1 to get the
+-- old clean-slate behaviour on a genuinely empty project; without it, applying
+-- this file is an additive migration and leaves data alone.
 -- ---------------------------------------------------------------------------
-drop schema if exists public cascade;
-create schema public;
+do $$
+begin
+  if current_setting('udgam.allow_destructive_reset', true) = '1' then
+    raise notice 'SCHEMA.sql: destructive reset ENABLED - dropping schema public';
+    execute 'drop schema if exists public cascade';
+    execute 'create schema public';
+  end if;
+end $$;
 grant usage on schema public to postgres, anon, authenticated, service_role;
 grant all on schema public to postgres, service_role;
 alter default privileges in schema public
@@ -210,6 +229,44 @@ returns boolean language sql stable security definer set search_path = public as
   select exists (
     select 1 from public.aggregations a
     where a.id = agg_uuid and a.buyer_id = uid
+  );
+$$;
+
+-- True when `uid` is a transporter holding a live offer to carry this shipment.
+-- This is what lets an as-yet-unassigned shipment be claimed: shipments_update
+-- keys off transporter_id, which is still null before anyone accepts, so
+-- without this no transporter could ever take the job. Scoped to a *pending*
+-- offer addressed to that transporter, so it grants nothing to anyone who was
+-- not actually asked. Definer for the same cycle-breaking reason as above.
+create or replace function public.has_open_transport_offer(ship_uuid uuid, uid uuid)
+returns boolean language sql stable security definer set search_path = public as $$
+  select exists (
+    select 1
+    from public.consolidation_requests cr
+    join public.transport_capacity c on c.id = cr.capacity_id
+    where cr.shipment_id = ship_uuid
+      and cr.status = 'pending'
+      and (cr.expires_at is null or cr.expires_at > now())
+      and c.transporter_id = uid
+  );
+$$;
+
+-- Same grant, keyed by order: a transporter deciding whether to take a job has
+-- to be able to READ that job first. Before they accept they are not yet an
+-- order participant, so is_order_participant is false and the order and its
+-- shipment are invisible to them -- which would mean answering "will you carry
+-- this?" with no idea what "this" is. Scoped to a live offer addressed to
+-- them, and it lapses the moment the offer is answered or expires.
+create or replace function public.has_open_transport_offer_on_order(order_uuid uuid, uid uuid)
+returns boolean language sql stable security definer set search_path = public as $$
+  select exists (
+    select 1
+    from public.consolidation_requests cr
+    join public.transport_capacity c on c.id = cr.capacity_id
+    where cr.order_id = order_uuid
+      and cr.status = 'pending'
+      and (cr.expires_at is null or cr.expires_at > now())
+      and c.transporter_id = uid
   );
 $$;
 
@@ -605,6 +662,7 @@ create table if not exists public.consolidation_requests (
 create index if not exists idx_consolidation_capacity  on public.consolidation_requests(capacity_id, status);
 create index if not exists idx_consolidation_requester on public.consolidation_requests(requester_id, status);
 
+
 create table if not exists public.shipments (
   id                    uuid primary key default gen_random_uuid(),
   order_id              uuid not null references public.orders(id) on delete cascade,
@@ -627,6 +685,85 @@ create table if not exists public.shipments (
 
 create index if not exists idx_shipments_order       on public.shipments(order_id);
 create index if not exists idx_shipments_transporter on public.shipments(transporter_id, status);
+
+-- Additive for databases created before the shipment carried its own logistics
+-- detail. A shipment is created (status 'created') by whoever `orders.
+-- logistics_arranged_by` names, BEFORE any transporter exists, so a
+-- transporter can see what they are being asked to carry before accepting.
+-- Pickup/drop are deliberately NOT derived from the farmer's and buyer's
+-- profile districts: produce may sit at a different store, and a buyer may
+-- want delivery to a warehouse.
+alter table public.shipments
+  add column if not exists cargo_kg              numeric(10,2);
+alter table public.shipments
+  add column if not exists pickup_address        text;
+alter table public.shipments
+  add column if not exists pickup_contact_name   text;
+alter table public.shipments
+  add column if not exists pickup_contact_phone  text;
+alter table public.shipments
+  add column if not exists pickup_from           timestamptz;
+alter table public.shipments
+  add column if not exists pickup_until          timestamptz;
+alter table public.shipments
+  add column if not exists pickup_instructions   text;
+alter table public.shipments
+  add column if not exists drop_address          text;
+alter table public.shipments
+  add column if not exists drop_contact_name     text;
+alter table public.shipments
+  add column if not exists drop_contact_phone    text;
+alter table public.shipments
+  add column if not exists deliver_by            timestamptz;
+alter table public.shipments
+  add column if not exists drop_instructions     text;
+-- Estimated at request time from distance x capacity pricing; the final figure
+-- is `earnings_paise`, set on delivery. Kept apart so the UI never shows an
+-- estimate as if it were settled (there is no payment rail for transport yet).
+alter table public.shipments
+  add column if not exists transport_cost_estimate_paise bigint;
+-- Who ARRANGES transport is orders.logistics_arranged_by; who PAYS is this.
+-- They are not the same decision and the schema must not conflate them.
+alter table public.shipments
+  add column if not exists transport_paid_by     arranged_by;
+
+-- A delivery window that closes before it opens, or a deadline before pickup,
+-- is not a shipment anyone can perform. Rejected at the database, not just in
+-- the form, because the form is not the security boundary.
+do $$ begin
+  alter table public.shipments
+    add constraint shipments_window_sane
+    check (
+      (pickup_until is null or pickup_from is null or pickup_until >= pickup_from)
+      and (deliver_by is null or pickup_from is null or deliver_by >= pickup_from)
+    );
+exception when duplicate_object then null; end $$;
+
+-- CONCURRENCY (the invariant two transporters race for): one order has at most
+-- one live shipment. Enforced here rather than in the router, so simultaneous
+-- accepts cannot both win -- the loser gets a unique violation, which the
+-- accept endpoint reports as "already taken" rather than 500.
+create unique index if not exists uq_shipment_live_per_order
+  on public.shipments(order_id) where status <> 'cancelled';
+
+-- Additive (declared here, after shipments, because it references it):
+-- consolidation_requests already modelled "ask a capacity owner to carry
+-- goods, they accept or reject" (LG-2 / T-7) but nothing was ever wired to
+-- it. The transport offer a transporter accepts or declines IS that row;
+-- pointing it at the shipment avoids inventing a second, competing table.
+alter table public.consolidation_requests
+  add column if not exists shipment_id uuid references public.shipments(id) on delete cascade;
+-- An offer nobody answered must not stay acceptable forever (a transporter
+-- accepting a week-late pickup is worse than no transporter).
+alter table public.consolidation_requests
+  add column if not exists expires_at  timestamptz;
+
+create index if not exists idx_consolidation_shipment on public.consolidation_requests(shipment_id, status);
+
+-- The same capacity must not hold two open offers for one shipment, however
+-- many times the arranger clicks "request".
+create unique index if not exists uq_consolidation_open_offer
+  on public.consolidation_requests(shipment_id, capacity_id) where status = 'pending';
 
 create table if not exists public.shipment_locations (
   id          uuid primary key default gen_random_uuid(),
@@ -1097,7 +1234,14 @@ create policy agg_items_farmer_consent on public.aggregation_items
 drop policy if exists orders_select on public.orders;
 create policy orders_select on public.orders
   for select to authenticated using (
-    buyer_id = auth.uid() or farmer_id = auth.uid() or public.is_order_participant(id, auth.uid())
+    buyer_id = auth.uid() or farmer_id = auth.uid()
+    or public.is_order_participant(id, auth.uid())
+    -- A transporter holding a live offer on this order, so they can read the
+    -- job (and the accept path can check the order's state) before they are a
+    -- participant. Narrow and self-expiring: answering or letting the offer
+    -- lapse removes the access. Consistent with what the transporter job list
+    -- has always shown for orders awaiting transport.
+    or public.has_open_transport_offer_on_order(id, auth.uid())
   );
 
 drop policy if exists orders_insert on public.orders;
@@ -1180,12 +1324,35 @@ create policy consolidation_update on public.consolidation_requests
 drop policy if exists shipments_select on public.shipments;
 create policy shipments_select on public.shipments
   for select to authenticated
-  using (transporter_id = auth.uid() or public.is_order_participant(order_id, auth.uid()));
+  using (
+    transporter_id = auth.uid()
+    or public.is_order_participant(order_id, auth.uid())
+    -- A transporter who has been asked to carry this load, for as long as
+    -- that offer is live. Without it they would be deciding blind.
+    or public.has_open_transport_offer(id, auth.uid())
+  );
 
+-- Three writers, each for a different part of the shipment's life:
+--   the assigned transporter (pickup -> in transit -> delivered),
+--   the order's buyer/farmer (logistics detail, and cancelling),
+--   a transporter who holds a live offer, claiming an unassigned shipment.
+-- The last one is the accept path: before anyone accepts, transporter_id is
+-- null, so a policy keyed only on transporter_id could never be satisfied and
+-- the job could never be taken. WITH CHECK deliberately omits the offer case:
+-- the row a claimer writes must name themselves as transporter, so a claim can
+-- only ever assign the job to the caller, never to a third party.
 drop policy if exists shipments_update on public.shipments;
 create policy shipments_update on public.shipments
   for update to authenticated
-  using (transporter_id = auth.uid()) with check (transporter_id = auth.uid());
+  using (
+    transporter_id = auth.uid()
+    or public.is_order_participant(order_id, auth.uid())
+    or (transporter_id is null and public.has_open_transport_offer(id, auth.uid()))
+  )
+  with check (
+    transporter_id = auth.uid()
+    or public.is_order_participant(order_id, auth.uid())
+  );
 
 drop policy if exists shipments_insert on public.shipments;
 create policy shipments_insert on public.shipments
@@ -1271,10 +1438,22 @@ create policy model_runs_read on public.model_runs for select to authenticated u
 drop policy if exists feedback_select on public.feedback;
 create policy feedback_select on public.feedback for select to authenticated using (true);
 
+-- Both sides must have been on the order, not just the reviewer: otherwise a
+-- genuine buyer could review a transporter who never carried their goods, or
+-- any stranger at all, by naming them as ratee. is_order_participant covers
+-- buyer, sole farmer, line-item farmer and the assigned transporter, so this
+-- authorises exactly the counterparties a reviewer actually dealt with.
+-- Self-review and double-review are already impossible: the table carries
+-- check (rater_id <> ratee_id) and unique (order_id, rater_id, ratee_id).
+-- "Only after the order completed" stays in the router, which can report why.
 drop policy if exists feedback_insert on public.feedback;
 create policy feedback_insert on public.feedback
   for insert to authenticated
-  with check (rater_id = auth.uid() and public.is_order_participant(order_id, auth.uid()));
+  with check (
+    rater_id = auth.uid()
+    and public.is_order_participant(order_id, auth.uid())
+    and public.is_order_participant(order_id, ratee_id)
+  );
 
 -- C-4: role-scoped by construction. A farmer cannot read a transporter's row.
 drop policy if exists notifications_own on public.notifications;

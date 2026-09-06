@@ -2,11 +2,22 @@
 
 Usage:  .venv/Scripts/python scripts/apply_schema.py
 
-Reads DATABASE_URL from .env. SCHEMA.sql is idempotent, so re-running it is
-safe and is the normal way to pick up a schema change.
+Reads DATABASE_URL from .env.
+
+Re-running this applies SCHEMA.sql as an ADDITIVE migration: create table if
+not exists, create or replace function, drop/create policy, add column if not
+exists. It leaves existing rows alone.
+
+That was not always true. SCHEMA.sql used to open with `drop schema public
+cascade`, while this docstring claimed the file was idempotent -- so a routine
+"pick up my schema change" wiped every public table, repeatedly, and only
+auth.users survived. The reset is now behind
+SCHEMA_ALLOW_DESTRUCTIVE_RESET=1 and off by default. Pass --reset only against
+a project whose data you are willing to lose.
 """
 from __future__ import annotations
 
+import os
 import sys
 from pathlib import Path
 
@@ -39,8 +50,17 @@ def main() -> int:
     sql = SCHEMA.read_text(encoding="utf-8")
     print(f"Applying {SCHEMA.relative_to(ROOT)} ({len(sql):,} bytes) ...")
 
+    # The clean-slate block in SCHEMA.sql only fires when this GUC says so, so
+    # the default path cannot drop anybody's data.
+    reset = os.environ.get("SCHEMA_ALLOW_DESTRUCTIVE_RESET") == "1"
+    if reset:
+        print("  !! SCHEMA_ALLOW_DESTRUCTIVE_RESET=1 - every public table will "
+              "be DROPPED before rebuilding", file=sys.stderr)
+
     with psycopg.connect(settings.DATABASE_URL, autocommit=True) as conn:
         with conn.cursor() as cur:
+            cur.execute("select set_config('udgam.allow_destructive_reset', %s, false)",
+                        ("1" if reset else "0",))
             cur.execute(sql)
 
             cur.execute("""
