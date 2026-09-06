@@ -12,7 +12,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/services/api/client';
 import type {
-  Aggregation, BuyerDashboard, Capacity, Crop, FarmerDashboard,
+  Aggregation, BuyerDashboard, Capacity, Crop, FarmerDashboard, GradeResult,
   MarketCompare, MatchesResponse, NetExitResponse, NotificationsResponse, Order,
   Product, BuyerRequest, SaleWindowResponse, Shipment, TransporterDashboard,
 } from '@/types/api';
@@ -65,7 +65,11 @@ export const useProduct = (id: string | undefined) =>
   useQuery({
     queryKey: ['products', id],
     enabled: Boolean(id),
-    queryFn: () => api.get<Product>(`/api/products/${id}`),
+    // GET /api/products/{id} (routers/products.py) returns
+    // {"product": {...}, "quality_grade": {...}, "farmer": {...}}, not a bare
+    // Product -- reading the envelope as the product left every field
+    // (price, quantity, grade) undefined on the listing detail page.
+    queryFn: () => api.get<{ product: Product }>(`/api/products/${id}`).then((r) => r.product),
   });
 
 export function useCreateListing() {
@@ -74,6 +78,27 @@ export function useCreateListing() {
     mutationFn: (body: Record<string, unknown>) => api.post<Product>('/api/products', body),
     onSuccess: () => {
       void qc.invalidateQueries({ queryKey: ['products'] });
+      void qc.invalidateQueries({ queryKey: ['dashboard', 'farmer'] });
+    },
+  });
+}
+
+/**
+ * AI-1: uploads a photo for an EXISTING listing and runs the grading heuristic
+ * server-side. The grade is never computed in the browser -- this call is the
+ * only way a product acquires a grade.
+ */
+export function useGradePhoto() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ productId, file }: { productId: string; file: File }) => {
+      const body = new FormData();
+      body.append('file', file);
+      return api.postForm<GradeResult>(`/api/products/${productId}/photo`, body);
+    },
+    onSuccess: (_result, { productId }) => {
+      void qc.invalidateQueries({ queryKey: ['products'] });
+      void qc.invalidateQueries({ queryKey: ['products', productId] });
       void qc.invalidateQueries({ queryKey: ['dashboard', 'farmer'] });
     },
   });
@@ -132,7 +157,15 @@ export const useOrder = (id: string | undefined) =>
   useQuery({
     queryKey: ['orders', id],
     enabled: Boolean(id),
-    queryFn: () => api.get<Order>(`/api/orders/${id}`),
+    // GET /api/orders/{id} (routers/orders.py get_order) returns
+    // {"order": {...}, "items": [...], "farmer": {...}, "buyer": {...}, ...}
+    // -- a different shape from the list endpoint, which already flattens
+    // items/counterparty onto each row. Reading the envelope as the Order
+    // itself left every field (status, order_no, items) undefined.
+    queryFn: () =>
+      api.get<{ order: Order; items: Order['items']; farmer: Order['farmer']; buyer: Order['buyer'] }>(
+        `/api/orders/${id}`,
+      ).then((r) => ({ ...r.order, items: r.items ?? [], farmer: r.farmer, buyer: r.buyer })),
   });
 
 /* ------------------------------------------------------------- transport */

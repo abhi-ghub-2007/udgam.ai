@@ -72,7 +72,10 @@ export default function OrderTrack() {
         <dl className="grid gap-3 border-t border-line-card pt-4 sm:grid-cols-2">
           <div>
             <dt className="text-label text-ink-muted">{t('market.farmer_label')}</dt>
-            <dd className="text-body font-semibold">{o.counterparty?.full_name ?? '—'}</dd>
+            {/* GET /api/orders/{id} returns the farmer profile directly --
+                unlike the list endpoint, it has no viewer-aware "counterparty"
+                (this route is buyer-only, so the farmer is always who to show). */}
+            <dd className="text-body font-semibold">{o.farmer?.full_name ?? '—'}</dd>
           </div>
           {o.placed_at && (
             <div>

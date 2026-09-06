@@ -85,12 +85,33 @@ export interface Product {
   status: ProductStatus;
   description: string | null;
   photo_path: string | null;
+  photo_url?: string | null;
   district: string | null;
   farmer_name?: string | null;
   created_at: string;
 }
 
 export interface ProductsResponse { products: Product[] }
+
+/** AI-1 result from POST /api/products/{id}/photo. EXPLAINABLE_CV_HEURISTIC --
+    a genuine OpenCV feature extraction, never a black-box network call, which
+    is why every field it returns is shown back to the farmer (services/
+    grading.py). Method is always HEURISTIC; never claim REAL/ALGORITHMIC here. */
+export interface GradeResult {
+  grade: Grade;
+  confidence: number;
+  method: MethodLabel;
+  features: {
+    color_score?: number;
+    blemish_score?: number;
+    sharpness_score?: number;
+    shape_score?: number;
+    score?: number;
+  };
+  reasons: string[];
+  photo_path: string | null;
+  photo_url: string | null;
+}
 
 // ---------------------------------------------------------------- requests
 export interface BuyerRequest {
@@ -187,7 +208,13 @@ export interface Order {
   delivered_at: string | null;
   created_at: string;
   items: OrderItem[];
-  counterparty: { full_name?: string | null; district?: string | null };
+  // Present on GET /api/orders (list) only -- role-aware, computed server-side
+  // (routers/orders.py list_orders: farmer for a buyer viewer, buyer otherwise).
+  counterparty?: { full_name?: string | null; district?: string | null };
+  // Present on GET /api/orders/{id} (detail) only -- the raw farmer/buyer
+  // profiles, since that endpoint has no viewer-aware "counterparty" concept.
+  farmer?: { full_name?: string | null; district?: string | null; phone?: string | null } | null;
+  buyer?: { full_name?: string | null; district?: string | null; phone?: string | null } | null;
 }
 
 export interface OrdersResponse { orders: Order[] }
