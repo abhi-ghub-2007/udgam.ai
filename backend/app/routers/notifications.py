@@ -5,12 +5,16 @@ RLS scopes them to user_id = auth.uid().
 """
 from __future__ import annotations
 
+import logging
+
 from fastapi import APIRouter
 
 from ..deps import CurrentUserDep
 from ..errors import NotFound
 
 router = APIRouter(prefix="/api", tags=["notifications"])
+
+log = logging.getLogger("udgam.notifications")
 
 
 @router.get("/notifications")
@@ -59,3 +63,32 @@ def create_notification(db, user_id: str, type_: str, title_key: str,
         "entity_type": entity_type,
         "entity_id": entity_id,
     }).execute()
+
+
+def notify(user_id: str, type_: str, title_key: str, body_key: str,
+           params: dict | None = None, entity_type: str | None = None,
+           entity_id: str | None = None) -> None:
+    """Tell somebody ELSE that something happened to them.
+
+    Service-role on purpose, and this is the only place it is used for
+    notifications. `notifications` deliberately has no INSERT policy at all
+    (db/SCHEMA.sql section 13 grants only select/update on user_id =
+    auth.uid()), because a notification is a statement the system makes about
+    a user, not something a user writes -- if any authenticated caller could
+    insert, anyone could forge "your order was cancelled" into a stranger's
+    inbox. With RLS default-deny, that means a JWT-scoped client cannot write
+    one even for a legitimate counterparty, so the fan-out runs as the service
+    role (A-12) after the router has already authorised the action that caused
+    it.
+
+    Never raises: a failed notification must not roll back the accept, decline
+    or delivery that actually happened.
+    """
+    from ..db.admin_client import admin_client
+
+    try:
+        create_notification(admin_client(), user_id, type_, title_key,
+                            body_key, params, entity_type, entity_id)
+    except Exception:  # noqa: BLE001 - delivery is best-effort by design
+        log.warning("notification %s for %s could not be stored", type_, user_id,
+                    exc_info=True)

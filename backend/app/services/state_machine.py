@@ -20,7 +20,15 @@ TRANSITIONS: dict[str, dict[str, list[str]]] = {
     "DRAFT":              {"PLACED": ["buyer", "farmer"], "CANCELLED": ["buyer", "farmer"]},
     "PLACED":             {"ACCEPTED": ["farmer"], "CANCELLED": ["buyer", "farmer"]},
     "ACCEPTED":           {"PAYMENT_HELD": ["buyer"], "CANCELLED": ["buyer", "farmer"]},
-    "PAYMENT_HELD":       {"LOGISTICS_ASSIGNED": ["buyer", "farmer"], "CANCELLED": ["buyer"]},
+    # A transporter reaches LOGISTICS_ASSIGNED by ACCEPTING an offer, so they
+    # are a legitimate actor for this one transition. They cannot start it:
+    # only the buyer or farmer named by orders.logistics_arranged_by can send
+    # the offer that makes accepting possible, and the accept endpoint checks
+    # the offer was addressed to this transporter. Without them here, nobody
+    # could take a job -- the party who arranges transport is not the party
+    # who agrees to carry it.
+    "PAYMENT_HELD":       {"LOGISTICS_ASSIGNED": ["buyer", "farmer", "transporter"],
+                            "CANCELLED": ["buyer"]},
     "LOGISTICS_ASSIGNED": {"PICKED_UP": ["transporter"], "CANCELLED": ["buyer", "farmer"]},
     "PICKED_UP":          {"IN_TRANSIT": ["transporter"], "CANCELLED": ["buyer", "farmer"]},
     "IN_TRANSIT":         {"DELIVERED": ["transporter"]},
