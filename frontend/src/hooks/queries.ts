@@ -23,7 +23,10 @@ export const useCrops = () =>
     queryKey: ['crops'],
     // Reference data: effectively immutable for a session.
     staleTime: 60 * 60_000,
-    queryFn: () => api.get<{ crops: Crop[] }>('/api/crops').then((r) => r.crops ?? []),
+    // GET /api/crops (routers/profiles.py) returns {"items": [...]}, not
+    // {"crops": [...]} -- this was read wrong during the migration, which
+    // silently left the crop dropdown empty on every form that uses it.
+    queryFn: () => api.get<{ items: Crop[] }>('/api/crops').then((r) => r.items ?? []),
   });
 
 /* ------------------------------------------------------------ dashboards */
