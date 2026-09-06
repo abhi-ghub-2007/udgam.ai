@@ -18,6 +18,7 @@ import { ApiError } from '@/services/api/client';
 import {
   Badge, Button, Card, CardSkeleton, ErrorState, Field, Input, PageHeader, Select,
 } from '@/components/ui';
+import { ReputationPanel } from '@/components/Reputation';
 import { money, number, date } from '@/utils/format';
 import type { Order } from '@/types/api';
 
@@ -193,6 +194,12 @@ export default function BuyerProduct() {
           <p className="text-body text-ink-muted">{t('market.no_longer_available')}</p>
         </Card>
       )}
+
+      {/* The farmer's record, next to the decision to buy from them — the
+          point at which it is worth anything (§20). */}
+      <div className="max-w-2xl">
+        <ReputationPanel profileId={p.farmer_id} role="farmer" />
+      </div>
 
       <Button variant="outline" onClick={() => navigate(-1)}>{t('common.back')}</Button>
     </div>

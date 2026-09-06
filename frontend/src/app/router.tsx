@@ -106,6 +106,10 @@ export const router = createBrowserRouter([
       { path: '/farmer/requests', element: guarded('farmer', <FarmerBuyers />) },
       { path: '/farmer/decisions', element: guarded('farmer', <FarmerDecisions />) },
       { path: '/farmer/orders', element: guarded('farmer', <FarmerOrders />) },
+      // Same detail page as the buyer's: it reads the viewer's role and the
+      // order's own logistics_arranged_by to decide what to offer, so both
+      // sides get one screen instead of two that drift apart.
+      { path: '/farmer/orders/:id', element: guarded('farmer', <BuyerOrderTrack />) },
       { path: '/farmer/transport', element: guarded('farmer', <FarmerTransport />) },
 
       { path: '/buyer', element: guarded('buyer', <BuyerHome />) },

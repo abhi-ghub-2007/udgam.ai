@@ -215,6 +215,11 @@ export interface Order {
   // profiles, since that endpoint has no viewer-aware "counterparty" concept.
   farmer?: { full_name?: string | null; district?: string | null; phone?: string | null } | null;
   buyer?: { full_name?: string | null; district?: string | null; phone?: string | null } | null;
+  /** Who is responsible for arranging haulage. Who PAYS is a separate field on
+      the shipment, because they are not the same decision. */
+  logistics_arranged_by?: 'farmer' | 'buyer';
+  /** Detail view only: the shipment, once transport has been planned. */
+  shipment?: ShipmentDetails | null;
 }
 
 export interface OrdersResponse { orders: Order[] }
@@ -234,6 +239,145 @@ export interface Shipment {
   earnings_paise: number;
 }
 export interface ShipmentsResponse { shipments: Shipment[] }
+
+/** The logistics a shipment carries before anyone agrees to haul it. Pickup and
+    drop are entered by whoever arranges transport, never inferred from the
+    farmer's or buyer's profile district. */
+export interface ShipmentDetails {
+  id: string;
+  order_id: string;
+  status: ShipmentStatus;
+  transporter_id: string | null;
+  cargo_kg: number | null;
+  pickup_address: string | null;
+  pickup_contact_name: string | null;
+  pickup_contact_phone: string | null;
+  pickup_from: string | null;
+  pickup_until: string | null;
+  pickup_instructions: string | null;
+  drop_address: string | null;
+  drop_contact_name: string | null;
+  drop_contact_phone: string | null;
+  deliver_by: string | null;
+  drop_instructions: string | null;
+  /** An estimate from the carrier's own rate card. `earnings_paise` is the
+      settled figure; there is no payment rail for transport yet, so the UI
+      must not present this as money that moved. */
+  transport_cost_estimate_paise: number | null;
+  /** Who PAYS. Who ARRANGES is orders.logistics_arranged_by — different call. */
+  transport_paid_by: 'farmer' | 'buyer' | null;
+}
+
+/** One transport listing that could carry a shipment. `reliability` is shown to
+    inform the person choosing; it is deliberately NOT what the list is ordered
+    by (see orchestration.py FORBIDDEN_FACTORS). */
+export interface TransportOption {
+  capacity_id: string;
+  transporter_id: string;
+  transporter_name: string | null;
+  capacity_type: string;
+  origin_district: string | null;
+  dest_district: string | null;
+  depart_at: string | null;
+  available_capacity_kg: number;
+  route_km: number | null;
+  estimated_cost_paise: number;
+  discount_pct: number;
+  reliability: {
+    avg_rating: number | null;
+    rating_count: number;
+    verification_status: string | null;
+  };
+  offer_status: 'pending' | 'accepted' | 'rejected' | 'cancelled' | null;
+}
+
+export interface TransportOptionsResponse {
+  shipment_id: string;
+  cargo_kg: number;
+  arranged_by: 'farmer' | 'buyer';
+  ranked_by: string;
+  options: TransportOption[];
+  method: MethodLabel;
+}
+
+/** An offer as the transporter sees it — everything needed to say yes or no. */
+export interface TransportJob {
+  offer_id: string;
+  order_id: string | null;
+  order_no: string | null;
+  shipment_id: string | null;
+  expires_at: string | null;
+  note: string | null;
+  cargo_kg: number;
+  capacity_id: string | null;
+  available_capacity_kg: number;
+  fits: boolean;
+  estimated_cost_paise: number | null;
+  route_km: number | null;
+  pickup: {
+    address: string | null; contact_name: string | null; contact_phone: string | null;
+    from: string | null; until: string | null; instructions: string | null;
+  };
+  drop: {
+    address: string | null; contact_name: string | null; contact_phone: string | null;
+    deliver_by: string | null; instructions: string | null;
+  };
+  transport_paid_by: 'farmer' | 'buyer' | null;
+}
+
+// ---------------------------------------------------------------- reputation
+export interface Review {
+  id: string;
+  order_id: string;
+  rating: number;
+  tags: string[];
+  comment: string | null;
+  ratee_role: Role;
+  created_at: string;
+}
+
+/** Counts behind the stars. Every field is counted from real orders and
+    shipments; a metric the data cannot answer is absent rather than zero. */
+export interface PerformanceStats {
+  completed?: number;
+  cancelled?: number;
+  disputed?: number;
+  on_time?: number;
+  on_time_of?: number;
+}
+
+export interface ProfileReviews {
+  profile: {
+    id: string; full_name: string | null; role: Role; district: string | null;
+    avg_rating: number | null; rating_count: number | null;
+    verification_status: string | null; created_at: string;
+  };
+  role: Role | null;
+  avg_rating: number | null;
+  review_count: number;
+  by_role: Record<string, { count: number; avg_rating: number }>;
+  performance: PerformanceStats;
+  reviews: Review[];
+  method: MethodLabel;
+  source: string;
+}
+
+export interface OrderFeedbackState {
+  order_id: string;
+  order_status: OrderStatus;
+  can_review: boolean;
+  reviewable_after: OrderStatus[];
+  my_role: Role;
+  counterparties: Array<{
+    profile_id: string;
+    full_name: string | null;
+    role_on_order: Role | null;
+    avg_rating: number | null;
+    rating_count: number;
+    already_reviewed: boolean;
+    my_review: Review | null;
+  }>;
+}
 
 export interface Capacity {
   id: string;

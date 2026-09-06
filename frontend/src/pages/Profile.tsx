@@ -5,6 +5,7 @@ import { useAuth } from '@/services/auth/AuthProvider';
 import { ApiError } from '@/services/api/client';
 import { LANGS, persistLang } from '@/i18n';
 import { Badge, Button, Card, Field, Input, PageHeader, Select } from '@/components/ui';
+import { ReputationPanel } from '@/components/Reputation';
 
 export default function Profile() {
   const { t, i18n } = useTranslation();
@@ -115,6 +116,15 @@ export default function Profile() {
           <Button type="submit" loading={update.isPending}>{t('common.save')}</Button>
         </form>
       </Card>
+
+      {/* Your own record, scored for the role you actually trade in. Shown here
+          because it is the one place every role already visits, and because a
+          reputation you cannot see is one you cannot act on. */}
+      {profile?.id && (
+        <div className="max-w-2xl">
+          <ReputationPanel profileId={profile.id} role={profile.role} />
+        </div>
+      )}
     </div>
   );
 }

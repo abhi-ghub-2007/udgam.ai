@@ -14,7 +14,9 @@ import { api } from '@/services/api/client';
 import type {
   Aggregation, BuyerDashboard, Capacity, Crop, FarmerDashboard, GradeResult,
   MarketCompare, MatchesResponse, NetExitResponse, NotificationsResponse, Order,
-  Product, BuyerRequest, SaleWindowResponse, Shipment, TransporterDashboard,
+  OrderFeedbackState, OrderStatus, Product, ProfileReviews, BuyerRequest, Review,
+  SaleWindowResponse, Shipment, ShipmentDetails, TransportJob,
+  TransportOptionsResponse, TransporterDashboard,
 } from '@/types/api';
 
 /* ------------------------------------------------------------- reference */
@@ -147,7 +149,11 @@ export const useMatchingListings = () =>
   });
 
 /* ---------------------------------------------------------------- orders */
-type OrderEnvelope = { order: Order; items: Order['items']; farmer: Order['farmer']; buyer: Order['buyer'] };
+type OrderEnvelope = {
+  order: Order; items: Order['items']; farmer: Order['farmer']; buyer: Order['buyer'];
+  /** Present once transport has been planned; null before that. */
+  shipment: ShipmentDetails | null;
+};
 
 // GET /api/orders/{id} and POST /api/orders (routers/orders.py get_order /
 // create_order -- the latter returns the former) both return
@@ -155,7 +161,10 @@ type OrderEnvelope = { order: Order; items: Order['items']; farmer: Order['farme
 // a different shape from the list endpoint, which already flattens
 // items/counterparty onto each row. Reading the envelope as the Order itself
 // left every field (status, order_no, items) undefined.
-const unwrapOrder = (r: OrderEnvelope): Order => ({ ...r.order, items: r.items ?? [], farmer: r.farmer, buyer: r.buyer });
+const unwrapOrder = (r: OrderEnvelope): Order => ({
+  ...r.order, items: r.items ?? [], farmer: r.farmer, buyer: r.buyer,
+  shipment: r.shipment ?? null,
+});
 
 export const useOrders = () =>
   useQuery({
@@ -201,6 +210,113 @@ export function useCreateOrder() {
 }
 
 /* ------------------------------------------------------------- transport */
+/** Move an order along the state machine (accept, decline, cancel, close).
+    The server re-checks that this role is allowed to make this move, so a
+    button appearing is never what authorises it. */
+export function useOrderTransition(orderId: string | undefined) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ to, note }: { to: OrderStatus; note?: string }) =>
+      api.post<unknown>(`/api/orders/${orderId}/transition`, { to_status: to, note }),
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: ['orders'] });
+      void qc.invalidateQueries({ queryKey: ['feedback', orderId] });
+      void qc.invalidateQueries({ queryKey: ['dashboard'] });
+    },
+  });
+}
+
+/* ------------------------------------------------- transport offers (F-7/T-7) */
+/** Offers waiting on this transporter, each carrying the pickup, drop, window,
+    deadline, weight and price they need to answer yes or no. */
+export const useTransportJobs = () =>
+  useQuery({
+    queryKey: ['transport', 'jobs'],
+    queryFn: () => api.get<{ jobs: TransportJob[] }>('/api/transport/jobs').then((r) => r.jobs ?? []),
+  });
+
+/** Carriers that could actually take this shipment. Ordered by cost then
+    distance server-side; reliability comes along to inform, not to rank. */
+export const useTransportOptions = (orderId: string | undefined, enabled = true) =>
+  useQuery({
+    queryKey: ['transport', 'options', orderId],
+    enabled: Boolean(orderId) && enabled,
+    queryFn: () => api.get<TransportOptionsResponse>(`/api/orders/${orderId}/transport-options`),
+  });
+
+export function useSaveShipmentDetails(orderId: string | undefined) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (body: Record<string, unknown>) =>
+      api.put<{ shipment: ShipmentDetails }>(`/api/orders/${orderId}/shipment`, body)
+        .then((r) => r.shipment),
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: ['orders', orderId] });
+      void qc.invalidateQueries({ queryKey: ['transport', 'options', orderId] });
+    },
+  });
+}
+
+export function useSendTransportOffers(orderId: string | undefined) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (capacityIds: string[]) =>
+      api.post<{ offers: unknown[]; skipped: Array<{ capacity_id: string; reason: string }> }>(
+        `/api/orders/${orderId}/transport-offers`, { capacity_ids: capacityIds }),
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: ['transport', 'options', orderId] });
+      void qc.invalidateQueries({ queryKey: ['orders', orderId] });
+    },
+  });
+}
+
+/** Accept is the one that races: two carriers can press it at the same moment,
+    and the server settles it. A 409 here means somebody else won, which is a
+    normal outcome to render, not an error to hide. */
+export function useAnswerTransportOffer() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ offerId, answer, reason }:
+                 { offerId: string; answer: 'accept' | 'decline'; reason?: string }) =>
+      api.post<{ ok: boolean }>(`/api/transport/offers/${offerId}/${answer}`,
+                                 answer === 'decline' ? { reason } : {}),
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: ['transport', 'jobs'] });
+      void qc.invalidateQueries({ queryKey: ['shipments'] });
+      void qc.invalidateQueries({ queryKey: ['dashboard', 'transporter'] });
+    },
+  });
+}
+
+/* ------------------------------------------------------------- reputation */
+export const useProfileReviews = (profileId: string | undefined, role?: string) =>
+  useQuery({
+    queryKey: ['reviews', profileId, role ?? null],
+    enabled: Boolean(profileId),
+    queryFn: () => api.get<ProfileReviews>(`/api/profiles/${profileId}/reviews`,
+                                            role ? { role } : undefined),
+  });
+
+/** What the caller may review on this order, and what they already said. */
+export const useOrderFeedback = (orderId: string | undefined) =>
+  useQuery({
+    queryKey: ['feedback', orderId],
+    enabled: Boolean(orderId),
+    queryFn: () => api.get<OrderFeedbackState>(`/api/orders/${orderId}/feedback`),
+  });
+
+export function useLeaveFeedback(orderId: string | undefined) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (body: { ratee_id: string; rating: number; tags?: string[]; comment?: string }) =>
+      api.post<{ feedback: Review }>(`/api/orders/${orderId}/feedback`, body),
+    onSuccess: (_r, body) => {
+      void qc.invalidateQueries({ queryKey: ['feedback', orderId] });
+      void qc.invalidateQueries({ queryKey: ['reviews', body.ratee_id] });
+    },
+  });
+}
+
 export const useShipments = () =>
   useQuery({
     queryKey: ['shipments'],
