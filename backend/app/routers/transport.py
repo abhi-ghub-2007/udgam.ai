@@ -595,6 +595,18 @@ async def accept_offer(offer_id: str, user: CurrentUserDep):
     if not order:
         raise NotFound("Order not found.")
     order = order[0]
+    # Real bug seen in manual testing: an offer could be sent (and a
+    # transporter could see it) while the order was only ACCEPTED, not yet
+    # PAYMENT_HELD -- LOGISTICS_ASSIGNED is only reachable from PAYMENT_HELD
+    # (state_machine.py). validate_transition alone raised a generic
+    # InvalidStateTransition (409), which the frontend's blanket
+    # "any 409 = someone else took it" mapping turned into "Another
+    # transporter accepted this first" -- true for nobody. Named here instead.
+    if order["status"] != "PAYMENT_HELD":
+        raise ValidationFailed(
+            "The buyer has not completed payment for this order yet. "
+            "You will be able to accept once payment is held."
+        )
     validate_transition(order["status"], "LOGISTICS_ASSIGNED", "transporter")
 
     # Claim. Conditioned on transporter_id still being unset, so two

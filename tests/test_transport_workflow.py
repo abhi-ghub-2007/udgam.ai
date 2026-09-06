@@ -215,3 +215,29 @@ def test_payments_insert_is_scoped_to_the_callers_own_buyer_id():
     check = _policy("payments_insert")
     assert "buyer_id = auth.uid()" in check
     assert "to authenticated" in check and " to anon" not in check
+
+
+# ------------------------------------------- unpaid order accept was misreported
+def test_accepting_before_payment_gives_its_own_real_reason():
+    """Found in manual testing: an offer could be sent and shown to a
+    transporter while the order was only ACCEPTED, not yet PAYMENT_HELD (the
+    only state LOGISTICS_ASSIGNED is reachable from). accept_offer fell
+    through to the generic InvalidStateTransition 409, and the frontend's
+    blanket "any 409 = somebody else took it" turned that into "Another
+    transporter accepted this first" -- true for nobody. Must be named
+    explicitly, before the generic transition check runs."""
+    src = inspect.getsource(tr.accept_offer)
+    check_idx = src.index('order["status"] != "PAYMENT_HELD"')
+    transition_idx = src.index("validate_transition(order")
+    assert check_idx < transition_idx, (
+        "the payment check must run before the generic transition check")
+    assert "has not completed payment" in src
+
+
+def test_frontend_only_calls_it_taken_on_the_real_duplicate_code():
+    """A 409 is not always a race loss -- INVALID_STATE_TRANSITION is also a
+    409. Only DUPLICATE means someone else genuinely won."""
+    path = Path(__file__).resolve().parents[1] / "frontend/src/pages/transporter/Jobs.tsx"
+    src = path.read_text(encoding="utf-8")
+    assert "err.code === 'DUPLICATE'" in src
+    assert "err.status === 409" not in src

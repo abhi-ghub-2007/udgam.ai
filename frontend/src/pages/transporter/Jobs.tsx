@@ -72,10 +72,12 @@ function JobCard({ job }: { job: TransportJob }) {
       await answer.mutateAsync({ offerId: job.offer_id, answer: kind, reason: reason || undefined });
       setOutcome(kind === 'accept' ? 'accepted' : 'declined');
     } catch (err) {
-      // 409 is not a fault: somebody else accepted first. Say so plainly
-      // rather than showing a generic failure.
+      // DUPLICATE means somebody else genuinely won the race -- say so
+      // plainly. Every other error (wrong state, expired, capacity) has its
+      // own real message from the server; blanket-treating any 409 as "taken"
+      // showed that message even when nobody else had touched the job.
       setError(err instanceof ApiError
-        ? (err.status === 409 ? t('transporter.job_taken') : err.message)
+        ? (err.code === 'DUPLICATE' ? t('transporter.job_taken') : err.message)
         : t('common.error_body'));
     }
   };
