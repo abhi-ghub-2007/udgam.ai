@@ -13,11 +13,12 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/services/api/client';
 import type {
   Aggregation, BuyerDashboard, Capacity, Crop, DemandHorizonForecast,
-  FarmerDashboard, ForecastHorizon, ForecastSummary,
+  Credential, FarmerDashboard, ForecastHorizon, ForecastSummary,
   GradeResult,
   MarketCompare, MatchesResponse, NetExitResponse, NotificationsResponse, Order,
   OrderFeedbackState, OrderStatus, Product, ProfileReviews, BuyerRequest, Review,
   SaleWindowResponse, Shipment, ShipmentDetails, TransportJob,
+  VerificationMe, VerificationProgress,
   TransportOptionsResponse, TransporterDashboard,
 } from '@/types/api';
 
@@ -488,6 +489,46 @@ export const useDemandHorizon = (
         crop_id: cropId, horizon, district: district ?? undefined,
       }),
   });
+
+/* ------------------------------------------------- identity verification */
+
+export const useMyVerification = () =>
+  useQuery({
+    queryKey: ['verification', 'me'],
+    queryFn: () => api.get<VerificationMe>('/api/verification/me'),
+  });
+
+/** Submit or resubmit one credential.
+
+    The raw value goes up once and is never stored; the server returns only the
+    mask. Status is decided server-side, so nothing here can request one. */
+export function useSubmitCredential() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (body: { doc_type: string; value: string; expires_on?: string }) =>
+      api.post<{ credential: Credential; message: string | null;
+                 progress: VerificationProgress }>('/api/verification/submit', body),
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: ['verification'] });
+      // The account-level badge is derived from credentials, so refresh what
+      // renders it rather than leaving a stale "unverified" on screen.
+      void qc.invalidateQueries({ queryKey: ['auth', 'me'] });
+    },
+  });
+}
+
+export function useWithdrawCredential() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (docType: string) =>
+      api.delete<{ ok: boolean; progress: VerificationProgress }>(
+        `/api/verification/${docType}`),
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: ['verification'] });
+      void qc.invalidateQueries({ queryKey: ['auth', 'me'] });
+    },
+  });
+}
 
 /* --------------------------------------------------------- notifications */
 export const useNotifications = () =>

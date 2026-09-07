@@ -6,6 +6,7 @@ import { ApiError } from '@/services/api/client';
 import { LANGS, persistLang } from '@/i18n';
 import { Badge, Button, Card, Field, Input, PageHeader, Select } from '@/components/ui';
 import { ReputationPanel } from '@/components/Reputation';
+import { VerificationPanel } from '@/components/VerificationPanel';
 
 export default function Profile() {
   const { t, i18n } = useTranslation();
@@ -116,6 +117,13 @@ export default function Profile() {
           <Button type="submit" loading={update.isPending}>{t('common.save')}</Button>
         </form>
       </Card>
+
+      {/* Identity and credentials. Sits here so an EXISTING user can finish
+          verifying without recreating an account -- no new route, no extra
+          navigation. Role decides which fields appear. */}
+      <div className="max-w-2xl">
+        <VerificationPanel />
+      </div>
 
       {/* Your own record, scored for the role you actually trade in. Shown here
           because it is the one place every role already visits, and because a

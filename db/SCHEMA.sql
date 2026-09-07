@@ -1541,4 +1541,181 @@ drop policy if exists idempotency_own on public.idempotency_keys;
 create policy idempotency_own on public.idempotency_keys
   for all to authenticated using (user_id = auth.uid()) with check (user_id = auth.uid());
 
+
+-- ===========================================================================
+-- IDENTITY & CREDENTIAL VERIFICATION
+--
+-- Extends the existing kyc_documents table rather than replacing it: that
+-- table already stores ONLY a masked value and already separates
+-- `format_valid` from any claim of verification, which is exactly the
+-- distinction this feature turns into a first-class state machine.
+--
+-- THE HOLE THIS CLOSES
+-- --------------------
+-- `profiles_update_self` grants UPDATE on the whole profiles row, and
+-- `kyc_own` grants ALL on kyc_documents. Postgres RLS cannot restrict which
+-- COLUMNS a policy covers, so a user could PATCH their own
+-- profiles.verification_status straight to 'verified' through PostgREST,
+-- bypassing FastAPI entirely. Verified live before writing this: a demo buyer
+-- self-elevated with one request and got HTTP 200, and decisions.py trusts
+-- that column for buyer trust badges.
+--
+-- Triggers are used rather than new policies because the requirement is
+-- column-level and RLS is row-level. A trigger runs regardless of which
+-- client made the write, so PostgREST, psql and a future admin tool are all
+-- covered by the same rule.
+-- ===========================================================================
+
+
+-- Per-credential lifecycle. Deliberately separate from profiles.verification_status,
+-- which stays as the coarse account-level summary the existing code reads.
+do $$ begin
+  create type credential_status as enum (
+    'pending',      -- submitted, awaiting a verification decision
+    'verified',     -- confirmed against an authorised source
+    'rejected',     -- checked and refused
+    'expired',      -- was valid, no longer is
+    'unavailable'   -- no authorised verification mechanism exists for this
+  );
+exception when duplicate_object then null; end $$;
+
+-- Widen the credential vocabulary. The original five stay valid.
+alter table public.kyc_documents drop constraint if exists kyc_documents_doc_type_check;
+alter table public.kyc_documents add constraint kyc_documents_doc_type_check
+  check (doc_type in (
+    -- identity (one of these two is the universal requirement)
+    'pan', 'aadhaar_last4',
+    -- farmer
+    'pm_kisan', 'farmer_id', 'crop_insurance', 'land_record',
+    -- buyer
+    'gstin',
+    -- transporter
+    'driving_licence', 'vehicle_rc', 'transport_permit'
+  ));
+
+alter table public.kyc_documents
+  add column if not exists status         credential_status not null default 'pending',
+  add column if not exists provider       text,
+  add column if not exists reference      text,
+  add column if not exists verified_at    timestamptz,
+  add column if not exists expires_at     timestamptz,
+  add column if not exists rejected_reason text,
+  add column if not exists updated_at     timestamptz not null default now();
+
+create index if not exists idx_kyc_status on public.kyc_documents(profile_id, status);
+
+-- Duplicate-identity prevention (rule 21). A verified identity credential may
+-- back exactly one account. Partial so unverified submissions never collide --
+-- two people mistyping the same PAN must not lock each other out, and the
+-- masked form is not unique enough to enforce on by itself.
+create unique index if not exists uq_kyc_verified_identity
+  on public.kyc_documents(doc_type, doc_number_masked)
+  where status = 'verified' and doc_type in ('pan', 'aadhaar_last4');
+
+-- ---------------------------------------------------------------------------
+-- Audit trail (rule 27). Append-only, never stores a raw credential value.
+-- ---------------------------------------------------------------------------
+create table if not exists public.verification_events (
+  id           uuid primary key default gen_random_uuid(),
+  profile_id   uuid not null references public.profiles(id) on delete cascade,
+  doc_type     text not null,
+  event        text not null,          -- submitted | verified | rejected | expired | resubmitted
+  from_status  credential_status,
+  to_status    credential_status,
+  actor        text not null,          -- 'user' | 'system' | 'admin'
+  provider     text,
+  note         text,                   -- never a credential value
+  created_at   timestamptz not null default now()
+);
+
+create index if not exists idx_verification_events_profile
+  on public.verification_events(profile_id, created_at desc);
+
+-- ---------------------------------------------------------------------------
+-- THE ENFORCEMENT: a user may submit, never decide.
+-- ---------------------------------------------------------------------------
+
+-- Writes arriving as `authenticated` (PostgREST with a user JWT) may not set
+-- any field that asserts a verification outcome. The service role, which only
+-- the backend holds, is exempt -- that is where verification decisions are
+-- made after an authorised check.
+create or replace function public.kyc_user_cannot_self_verify()
+returns trigger language plpgsql as $$
+begin
+  -- SECURITY INVOKER on purpose: a DEFINER function runs as its owner, so
+  -- current_user would read 'postgres' and this exemption could never match --
+  -- which made verification ungrantable even by the backend. Found in testing.
+  -- `request.jwt.claim.role` is not used: that GUC was removed in PostgREST 9.
+  if current_user = 'service_role' then
+    return new;                       -- backend decision, allowed through
+  end if;
+
+  if tg_op = 'INSERT' then
+    -- Every user-submitted credential starts as pending, whatever was sent.
+    new.status          := 'pending';
+    new.verified_at     := null;
+    new.expires_at      := null;
+    new.provider        := null;
+    new.reference       := null;
+    new.rejected_reason := null;
+    new.format_valid    := false;     -- the backend re-validates server-side
+  else
+    -- Resubmitting a credential is allowed; awarding yourself a status is not.
+    new.status          := old.status;
+    new.verified_at     := old.verified_at;
+    new.expires_at      := old.expires_at;
+    new.provider        := old.provider;
+    new.reference       := old.reference;
+    new.rejected_reason := old.rejected_reason;
+    new.format_valid    := old.format_valid;
+    -- A changed value means the old decision no longer applies to it.
+    if new.doc_number_masked is distinct from old.doc_number_masked then
+      new.status       := 'pending';
+      new.verified_at  := null;
+      new.format_valid := false;
+    end if;
+  end if;
+  new.updated_at := now();
+  return new;
+end $$;
+
+drop trigger if exists trg_kyc_no_self_verify on public.kyc_documents;
+create trigger trg_kyc_no_self_verify
+  before insert or update on public.kyc_documents
+  for each row execute function public.kyc_user_cannot_self_verify();
+
+-- Same rule for the account-level summary. This is the column decisions.py
+-- reads for buyer trust, and it was directly self-settable.
+create or replace function public.profile_verification_is_system_owned()
+returns trigger language plpgsql as $$
+begin
+  if current_user = 'service_role' then
+    return new;
+  end if;
+  new.verification_status := old.verification_status;
+  return new;
+end $$;
+
+drop trigger if exists trg_profile_verification_locked on public.profiles;
+create trigger trg_profile_verification_locked
+  before update on public.profiles
+  for each row execute function public.profile_verification_is_system_owned();
+
+-- ---------------------------------------------------------------------------
+-- RLS
+-- ---------------------------------------------------------------------------
+
+-- kyc_own already scopes rows to the owner. Kept as-is; the trigger above is
+-- what stops the owner from deciding their own outcome. DELETE stays allowed
+-- so a user can withdraw a credential they submitted (data minimisation).
+
+alter table public.verification_events enable row level security;
+
+-- A user may read their own audit trail -- it is their record. Nobody writes
+-- to it from a client: events are recorded by the backend under the service
+-- role, so there is deliberately no INSERT policy (default deny).
+drop policy if exists verification_events_own on public.verification_events;
+create policy verification_events_own on public.verification_events
+  for select to authenticated using (profile_id = auth.uid());
+
 commit;

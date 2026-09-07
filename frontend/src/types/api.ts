@@ -712,3 +712,63 @@ export interface DemandHorizonForecast {
     observed_total_kg: number;
   };
 }
+
+/* --------------------------------------------------- identity verification */
+
+export type CredentialStatus =
+  | 'pending' | 'verified' | 'rejected' | 'expired' | 'unavailable';
+
+export type CredentialType =
+  | 'pan' | 'aadhaar_last4'
+  | 'pm_kisan' | 'farmer_id' | 'crop_insurance' | 'land_record'
+  | 'gstin'
+  | 'driving_licence' | 'vehicle_rc' | 'transport_permit';
+
+/** One submitted credential, as its owner may see it.
+
+    `masked_value` is the ONLY form that ever leaves the server -- the raw
+    number is validated and discarded inside the request that carried it. */
+export interface Credential {
+  doc_type: CredentialType;
+  status: CredentialStatus;
+  masked_value: string | null;
+  format_valid: boolean | null;
+  /** Names who verified it. Null means nobody has -- not that it is fine. */
+  provider: string | null;
+  submitted_at: string | null;
+  verified_at: string | null;
+  expires_at: string | null;
+  expiry: 'valid' | 'expiring_soon' | 'expired' | null;
+  rejected_reason: string | null;
+}
+
+/** Counts, never an invented trust score. Identity and role credentials are
+    reported separately because they are different claims. */
+export interface VerificationProgress {
+  identity_verified: boolean;
+  identity_submitted: boolean;
+  role_credentials_total: number;
+  role_credentials_submitted: number;
+  role_credentials_verified: number;
+  credentials_verified_total: number;
+}
+
+export interface VerificationMe {
+  role: string;
+  credentials: Credential[];
+  applicable: { identity: CredentialType[]; role_credentials: CredentialType[] };
+  progress: VerificationProgress;
+  /** 'manual' or 'demo'. Demo output is labelled everywhere it appears. */
+  verification_mode: 'manual' | 'demo';
+  /** Per credential: is there an authorised integration to call at all? */
+  automated_available: Record<string, boolean>;
+}
+
+/** What OTHER users may see: statuses only, never values. */
+export interface PublicTrust {
+  profile_id: string;
+  role: string;
+  identity_verified: boolean;
+  verified_credentials: CredentialType[];
+  verified_count: number;
+}
