@@ -15,6 +15,8 @@ whether to sell.
 """
 from __future__ import annotations
 
+import logging
+
 from fastapi import APIRouter, Query
 
 from ..deps import CurrentUserDep
@@ -22,6 +24,8 @@ from ..errors import NotFound
 from ..ml import demand as demand_model
 from ..ml import forecaster
 from .market import _crop_row
+
+log = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api/forecast", tags=["forecast"])
 
@@ -40,6 +44,36 @@ def _history(db, crop_id: str, district: str) -> list[dict]:
         .order("price_date", desc=True).limit(_HISTORY_DAYS).execute()
     )
     return list(reversed(res.data or []))
+
+
+def _demand_data_counts() -> tuple[list[dict], list[dict]]:
+    """Platform-wide buyer-side volume, for the demand sufficiency gate.
+
+    Deliberately NOT read through `user.db`. Under RLS a farmer sees only their
+    own orders, so the caller-scoped view reported 6 orders where the platform
+    has 19 -- a gate fed that number would stay shut long after enough real
+    demand history existed, and would report a different verdict to every user
+    for the same market. Whether UDGAM as a whole has enough history is a
+    property of the platform, not of whoever is asking.
+
+    Only COUNTS cross this boundary: no order rows, no buyer identities, no
+    quantities. `created_at` is fetched solely to count distinct days. This is
+    the same system-not-user footing scripts/seed_demo.py stands on (A-12).
+
+    Degrades to the empty case rather than failing the endpoint: a demand
+    signal that cannot prove sufficiency is correctly treated as insufficient.
+    """
+    try:
+        from ..db.admin_client import admin_client
+        admin = admin_client()
+        orders = (admin.table("orders").select("created_at")
+                  .limit(5000).execute()).data or []
+        requests = (admin.table("buyer_requests").select("id")
+                    .limit(2000).execute()).data or []
+        return orders, requests
+    except Exception:  # noqa: BLE001 - forecasting must never 500 a dashboard
+        log.warning("demand sufficiency counts unavailable", exc_info=True)
+        return [], []
 
 
 def _observed_status(rows: list[dict]) -> str:
@@ -103,14 +137,7 @@ async def demand_forecast(
     crop = _crop_row(user.db, crop_id, crop_code)
     prices = _history(user.db, crop["id"], district)
 
-    orders = (
-        user.db.table("orders")
-        .select("id, created_at, status")
-        .limit(1000).execute()
-    ).data or []
-    requests = (
-        user.db.table("buyer_requests").select("id").limit(500).execute()
-    ).data or []
+    orders, requests = _demand_data_counts()
 
     result = demand_model.forecast_demand(
         order_rows=orders, price_rows=prices, request_rows=requests,
@@ -137,10 +164,9 @@ async def forecast_summary(
 
     price = forecaster.forecast_price(
         rows, crop=crop["name_en"], district=district)
-    orders = (user.db.table("orders").select("id, created_at, status")
-              .limit(1000).execute()).data or []
+    orders, requests = _demand_data_counts()
     dem = demand_model.forecast_demand(
-        order_rows=orders, price_rows=rows,
+        order_rows=orders, price_rows=rows, request_rows=requests,
         crop=crop["name_en"], district=district)
 
     return {
