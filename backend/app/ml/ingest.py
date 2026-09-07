@@ -168,14 +168,24 @@ def main():
     run_id = record_model_run(admin)
     print(f"model_run: {run_id}")
 
+    # uq_prices_observed is a PARTIAL unique index (`where is_prediction =
+    # false`), which ON CONFLICT cannot target through PostgREST. Replacing
+    # each ingested crop's observed rows outright is simpler than working
+    # around that, and is idempotent in the way that actually matters: running
+    # this twice leaves the same rows, not duplicates.
+    crop_ids = sorted({r["crop_id"] for r in observed})
+    for cid in crop_ids:
+        (admin.table("prices").delete()
+         .eq("crop_id", cid).eq("state", "Maharashtra")
+         .eq("is_prediction", False).eq("data_source", DATA_SOURCE).execute())
+
     written = 0
     for i in range(0, len(observed), 500):
         chunk = observed[i:i + 500]
-        admin.table("prices").upsert(
-            chunk, on_conflict="crop_id,district,price_date").execute()
+        admin.table("prices").insert(chunk).execute()
         written += len(chunk)
         print(f"  observed {written}/{len(observed)}", end="\r")
-    print(f"\nobserved upserted   : {written}")
+    print(f"\nobserved inserted   : {written}")
 
     forecasts = build_forecast_rows(args.panel, by_name, by_code, run_id)
     for f in forecasts:
