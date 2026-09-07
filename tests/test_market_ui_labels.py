@@ -233,3 +233,42 @@ def test_synthetic_vegetable_base_is_a_plausible_per_kg_price():
         f"synthetic vegetable base is Rs {rupees_per_kg}/kg, which is not a "
         "plausible per-kg wholesale price -- the unit convention has drifted"
     )
+
+
+# --------------------------------------------------------------------------
+# freshness grading on the shapes PostgREST actually returns
+# --------------------------------------------------------------------------
+
+def test_freshness_accepts_the_iso_strings_postgrest_returns():
+    """`price_date` arrives as '2026-09-05' and `created_at` as an ISO
+    timestamp string -- never as Python date objects. This path was dead code
+    while every row was SYNTHETIC (freshness_of returns early for those), so
+    the first REAL observations 500'd /api/market/compare with
+    'combine() argument 1 must be datetime.date, not str'."""
+    from datetime import datetime, timezone
+    from backend.app.services.market_data import freshness_of
+
+    # Thresholds: LIVE under 24h, RECENT under 72h, STALE beyond.
+    now = datetime(2026, 9, 6, 12, 0, tzinfo=timezone.utc)
+    assert freshness_of("2026-09-06", method="REAL", now=now) == "LIVE"     # 12h
+    assert freshness_of("2026-09-05", method="REAL", now=now) == "RECENT"   # 36h
+    assert freshness_of("2026-09-01", method="REAL", now=now) == "STALE"    # 132h
+    assert freshness_of("2026-09-06T06:00:00+00:00", method="REAL", now=now) == "LIVE"
+    # A trailing 'Z' is valid ISO and must not blow up either.
+    assert freshness_of("2026-09-06T06:00:00Z", method="REAL", now=now) == "LIVE"
+
+
+def test_unparseable_timestamp_grades_stale_rather_than_raising():
+    from backend.app.services.market_data import freshness_of
+    # An ungradeable timestamp is a reason to distrust one number, not to fail
+    # the whole page the farmer asked for.
+    assert freshness_of("not-a-date", method="REAL") == "STALE"
+    assert freshness_of("", method="REAL") == "STALE"
+
+
+def test_synthetic_still_wins_over_age_regardless_of_timestamp_type():
+    from datetime import datetime, timezone
+    from backend.app.services.market_data import freshness_of
+    now = datetime(2026, 9, 6, 12, 0, tzinfo=timezone.utc)
+    # A generated row is generated no matter how fresh it looks.
+    assert freshness_of("2026-09-06", method="SYNTHETIC", now=now) == "SYNTHETIC"

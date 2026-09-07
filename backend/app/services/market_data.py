@@ -190,8 +190,47 @@ def confidence_for_horizon(horizon_days: int | None) -> float | None:
     return round(max(0.15, min(0.6, 0.6 - 0.03 * horizon_days)), 3)
 
 
+def _as_moment(observed_at: datetime | date | str) -> datetime | None:
+    """Coerce whatever the row carried into an aware datetime, or None.
+
+    PostgREST returns `price_date` as '2026-09-05' and `created_at` as an ISO
+    timestamp STRING, never as Python date/datetime objects. That went
+    unnoticed for as long as every row in `prices` was method='SYNTHETIC',
+    because freshness_of returns before touching the date in that case -- the
+    arithmetic below was effectively dead code. The first REAL observations
+    reached it and it raised
+    `TypeError: combine() argument 1 must be datetime.date, not str`,
+    500ing /api/market/compare.
+
+    Returns None for anything unparseable so the caller can grade the row
+    STALE rather than fail the request: an ungradeable timestamp is a reason
+    to distrust a number, not to deny the farmer the whole page.
+    """
+    if isinstance(observed_at, datetime):
+        return observed_at if observed_at.tzinfo else observed_at.replace(tzinfo=timezone.utc)
+    if isinstance(observed_at, date):
+        return datetime.combine(observed_at, datetime.min.time(), tzinfo=timezone.utc)
+    if isinstance(observed_at, str):
+        text = observed_at.strip()
+        if not text:
+            return None
+        # Python < 3.11 cannot parse a trailing 'Z'.
+        if text.endswith("Z"):
+            text = text[:-1] + "+00:00"
+        try:
+            parsed = datetime.fromisoformat(text)
+        except ValueError:
+            try:
+                parsed = datetime.combine(date.fromisoformat(text[:10]),
+                                          datetime.min.time())
+            except ValueError:
+                return None
+        return parsed if parsed.tzinfo else parsed.replace(tzinfo=timezone.utc)
+    return None
+
+
 def freshness_of(
-    observed_at: datetime | date | None,
+    observed_at: datetime | date | str | None,
     *,
     method: str | None,
     is_prediction: bool = False,
@@ -212,10 +251,9 @@ def freshness_of(
         return FRESH_STALE
 
     now = now or datetime.now(timezone.utc)
-    if isinstance(observed_at, datetime):
-        moment = observed_at if observed_at.tzinfo else observed_at.replace(tzinfo=timezone.utc)
-    else:
-        moment = datetime.combine(observed_at, datetime.min.time(), tzinfo=timezone.utc)
+    moment = _as_moment(observed_at)
+    if moment is None:
+        return FRESH_STALE
 
     age_hours = (now - moment).total_seconds() / 3600.0
     if age_hours < LIVE_MAX_HOURS:
