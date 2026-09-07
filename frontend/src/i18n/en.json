@@ -175,8 +175,9 @@
     "method_REAL": "Trained model",
     "method_HEURISTIC": "Explainable Computer Vision",
     "method_ALGORITHMIC": "Algorithm",
-    "method_SYNTHETIC": "Sample data",
-    "confidence": "Confidence"
+    "method_SYNTHETIC": "Simulated",
+    "confidence": "Confidence",
+    "method_MIXED": "Partly simulated"
   },
   "assistant": {
     "open": "Open voice assistant",
@@ -599,7 +600,8 @@
       "farmer": "farmer",
       "buyer": "buyer",
       "platform": "platform"
-    }
+    },
+    "price_per_kg": "Price (per kg)"
   },
   "review": {
     "title": "Reviews",
@@ -691,5 +693,26 @@
     "no_history": "Not enough market history for this crop and district yet.",
     "no_model": "The price model is not available on this deployment.",
     "unavailable": "No forecast available right now."
+  },
+  "rank": {
+    "highest_first": "{factor}, highest first",
+    "lowest_first": "{factor}, lowest first",
+    "modal_price": "market price",
+    "net_realization": "what you take home",
+    "risk_adjusted": "what you take home, after allowing for risk",
+    "unit_price": "price per kg",
+    "estimated_cost": "transport cost",
+    "distance": "distance",
+    "quantity_fit": "how much of the order it covers",
+    "quality_fit": "grade match",
+    "deadline_fit": "delivery in time",
+    "payment_reliability": "payment record",
+    "reference_id": "listing order"
+  },
+  "provenance": {
+    "source_simulated": "Simulated market data",
+    "source_agmarknet_csv": "Agmarknet daily price records",
+    "source_unspecified": "Unverified source",
+    "simulated_note": "Prices shown are simulated for demonstration, not live mandi rates."
   }
 }

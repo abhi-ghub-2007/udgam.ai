@@ -204,9 +204,10 @@ def test_feature_vector_matches_the_declared_feature_order():
 
 def _price_rows(n=40):
     return [{"price_date": (date(2026, 1, 1) + timedelta(days=i)).isoformat(),
-             "modal_price_paise": (1000 + i * 10) * 100,
-             "min_price_paise": (950 + i * 10) * 100,
-             "max_price_paise": (1050 + i * 10) * 100,
+             # paise/kg: 1,000 = Rs 10/kg = Rs 1,000/quintal
+             "modal_price_paise": 1000 + i * 10,
+             "min_price_paise": 950 + i * 10,
+             "max_price_paise": 1050 + i * 10,
              "arrival_qty_tonnes": 5.0, "market_count": 2} for i in range(n)]
 
 
@@ -284,11 +285,11 @@ def test_interval_is_multiplicative_so_it_scales_with_the_price():
     """A +/-300 band is wide on Spinach and narrow on Brinjal. The shipped band
     is calibrated in log space, so both get the same RELATIVE uncertainty."""
     cheap = [{"price_date": (date(2026, 1, 1) + timedelta(days=i)).isoformat(),
-              "modal_price_paise": 40000, "min_price_paise": 38000,
-              "max_price_paise": 42000, "arrival_qty_tonnes": 5.0,
+              "modal_price_paise": 400, "min_price_paise": 380,
+              "max_price_paise": 420, "arrival_qty_tonnes": 5.0,
               "market_count": 2} for i in range(60)]
-    dear = [{**r, "modal_price_paise": 400000, "min_price_paise": 380000,
-             "max_price_paise": 420000} for r in cheap]
+    dear = [{**r, "modal_price_paise": 4000, "min_price_paise": 3800,
+             "max_price_paise": 4200} for r in cheap]
     a = forecaster.forecast_price(cheap, crop="Spinach", district="Pune")
     b = forecaster.forecast_price(dear, crop="Brinjal", district="Pune")
     width_a = (a["upper_bound"] - a["lower_bound"]) / a["predicted_price"]
@@ -317,9 +318,11 @@ def test_shipped_model_actually_beats_the_naive_baseline():
 
 @pytest.mark.skipif(not forecaster.model_available(), reason="artifact not built")
 def test_trend_is_stable_when_the_move_is_inside_the_noise_floor():
+    # paise/kg: 2,000 = Rs 20/kg = Rs 2,000/quintal. Writing 200000 here would
+    # mean Rs 2,000 per KG, far outside anything the model has seen.
     flat = [{"price_date": (date(2026, 1, 1) + timedelta(days=i)).isoformat(),
-             "modal_price_paise": 200000, "min_price_paise": 195000,
-             "max_price_paise": 205000, "arrival_qty_tonnes": 5.0,
+             "modal_price_paise": 2000, "min_price_paise": 1950,
+             "max_price_paise": 2050, "arrival_qty_tonnes": 5.0,
              "market_count": 2} for i in range(60)]
     out = forecaster.forecast_price(flat, crop="Brinjal", district="Pune")
     assert out["trend"] == "STABLE"

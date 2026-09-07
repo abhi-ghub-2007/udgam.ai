@@ -79,7 +79,17 @@ def _predict(art, feats):
 
 
 def _to_history(price_rows):
-    """`prices` rows -> the row shape features_at expects. Paise -> rupees."""
+    """`prices` rows -> the row shape features_at expects.
+
+    UNIT NOTE. `prices.modal_price_paise` is PAISE PER KG (net_exit.py
+    multiplies it straight by quantity_kg). The model was fitted on the panel's
+    RUPEES PER QUINTAL. Those two are the same number -- Rs 2,000/quintal is
+    Rs 20/kg is 2,000 paise/kg -- so the value carries across unchanged.
+
+    Dividing by 100 here, as this function first did, silently reported a
+    Rs 2,200/quintal price as "Rs 22 per quintal": a hundredfold understatement
+    shown against a per-quintal label.
+    """
     out = []
     for r in price_rows:
         modal = r.get("modal_price_paise")
@@ -92,9 +102,9 @@ def _to_history(price_rows):
         lo, hi = r.get("min_price_paise"), r.get("max_price_paise")
         out.append({
             "date": d,
-            "modal_price": modal / 100.0,
-            "price_min": lo / 100.0 if lo is not None else None,
-            "price_max": hi / 100.0 if hi is not None else None,
+            "modal_price": float(modal),
+            "price_min": float(lo) if lo is not None else None,
+            "price_max": float(hi) if hi is not None else None,
             "market_count": int(r.get("market_count") or 1),
             "total_arrival_tonnes": float(r.get("arrival_qty_tonnes") or 0.0),
         })

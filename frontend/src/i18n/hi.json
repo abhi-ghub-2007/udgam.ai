@@ -171,8 +171,9 @@
     "method_REAL": "प्रशिक्षित मॉडल",
     "method_HEURISTIC": "Explainable Computer Vision",
     "method_ALGORITHMIC": "एल्गोरिद्म",
-    "method_SYNTHETIC": "नमूना डेटा",
-    "confidence": "भरोसा"
+    "method_SYNTHETIC": "सिम्युलेटेड",
+    "confidence": "भरोसा",
+    "method_MIXED": "आंशिक रूप से सिम्युलेटेड"
   },
   "assistant": {
     "open": "आवाज़ सहायक खोलें",
@@ -505,7 +506,8 @@
       "farmer": "किसान",
       "buyer": "ख़रीदार",
       "platform": "प्लेटफ़ॉर्म"
-    }
+    },
+    "price_per_kg": "भाव (प्रति किलो)"
   },
   "review": {
     "title": "समीक्षाएँ",
@@ -597,5 +599,26 @@
     "no_history": "इस फसल और जिले के लिए अभी पर्याप्त बाज़ार इतिहास नहीं है।",
     "no_model": "इस परिनियोजन पर मूल्य मॉडल उपलब्ध नहीं है।",
     "unavailable": "अभी कोई अनुमान उपलब्ध नहीं है।"
+  },
+  "rank": {
+    "highest_first": "{factor}, सबसे अधिक पहले",
+    "lowest_first": "{factor}, सबसे कम पहले",
+    "modal_price": "बाज़ार भाव",
+    "net_realization": "आपके हाथ में आने वाली रकम",
+    "risk_adjusted": "जोखिम घटाकर आपके हाथ में आने वाली रकम",
+    "unit_price": "प्रति किलो भाव",
+    "estimated_cost": "परिवहन लागत",
+    "distance": "दूरी",
+    "quantity_fit": "ऑर्डर का कितना हिस्सा पूरा होता है",
+    "quality_fit": "ग्रेड मेल",
+    "deadline_fit": "समय पर डिलीवरी",
+    "payment_reliability": "भुगतान रिकॉर्ड",
+    "reference_id": "सूची क्रम"
+  },
+  "provenance": {
+    "source_simulated": "नकली (सिम्युलेटेड) बाज़ार डेटा",
+    "source_agmarknet_csv": "एगमार्कनेट दैनिक भाव रिकॉर्ड",
+    "source_unspecified": "असत्यापित स्रोत",
+    "simulated_note": "दिखाए गए भाव केवल प्रदर्शन के लिए नकली हैं, ये लाइव मंडी भाव नहीं हैं।"
   }
 }

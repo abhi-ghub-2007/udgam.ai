@@ -123,6 +123,13 @@ export function ForecastCard({ cropId, district }: {
   if (q.isError || !q.data) return null;
 
   const { price: f, demand: d } = q.data;
+  // MIXED is not a MethodLabel, so it gets its own badge label rather than
+  // being rounded to REAL (overclaiming) or SYNTHETIC (understating).
+  const observedStatus = q.data.observed_data_status === 'MIXED'
+    ? 'MIXED' as const
+    : q.data.observed_data_status === 'UNAVAILABLE'
+      ? null
+      : q.data.observed_data_status;
 
   return (
     <Card className="space-y-4 animate-fade-up">
@@ -175,13 +182,24 @@ export function ForecastCard({ cropId, district }: {
           <DemandRow d={d} />
 
           <div className="flex flex-wrap items-center gap-2 border-t border-line-card pt-3">
-            <MethodBadge method={f.data_status} />
+            {/* The badge must describe THE PRICES ON SCREEN, not the model's
+                training set. `f.data_status` is the latter -- it reads REAL
+                because the model was fitted on Agmarknet history, and it was
+                sitting next to a forecast computed from seeded synthetic rows,
+                labelling simulated prices "Trained model". `observed_data_status`
+                is what the underlying `prices` rows actually are on this
+                deployment, which is the question a farmer is asking. */}
+            <MethodBadge method={observedStatus} />
             {f.data_age_days != null && (
               <span className="text-label text-ink-muted">
                 {t('forecast.updated_days_ago', { days: f.data_age_days })}
               </span>
             )}
           </div>
+          {/* No explainer sentence here on purpose. The demand row directly
+              above already states why its signal is a demonstration, and the
+              Nearby-markets card carries the full simulated-prices note. A
+              third copy on one screen is how the original bug looked. */}
 
           <details className="text-label text-ink-muted">
             <summary className="min-h-tap cursor-pointer select-none py-1">

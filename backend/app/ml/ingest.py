@@ -65,10 +65,19 @@ def build_observed_rows(panel_path, by_name, by_code):
                 "district": r["district"],
                 "state": "Maharashtra",
                 "price_date": r["date"],
-                # Paise, because that is the unit `prices` is declared in.
-                "modal_price_paise": int(round(float(r["modal_price"]) * 100)),
-                "min_price_paise": int(round(float(r["price_min"]) * 100)) if r["price_min"] else None,
-                "max_price_paise": int(round(float(r["price_max"]) * 100)) if r["price_max"] else None,
+                # UNIT: `prices.modal_price_paise` is PAISE PER KG, not per
+                # quintal. net_exit.py multiplies it straight by quantity_kg
+                # ("{qty} kg x {unit} paise/kg modal price"), and the synthetic
+                # generator seeds it at ~2,200 for vegetables (Rs 22/kg).
+                #
+                # The panel is in Rs/quintal, and the conversion is a no-op by
+                # arithmetic coincidence -- Rs 2,000/quintal is Rs 20/kg is
+                # 2,000 paise/kg -- so the number carries over unchanged. It is
+                # written explicitly rather than left implicit because getting
+                # this wrong scales every farmer's gross sale value by 100.
+                "modal_price_paise": int(round(float(r["modal_price"]))),
+                "min_price_paise": int(round(float(r["price_min"]))) if r["price_min"] else None,
+                "max_price_paise": int(round(float(r["price_max"]))) if r["price_max"] else None,
                 "arrival_qty_tonnes": float(r["total_arrival_tonnes"]),
                 "is_prediction": False,
                 "method": "REAL",
@@ -88,9 +97,11 @@ def build_forecast_rows(panel_path, by_name, by_code, model_run_id=None):
             continue
         price_rows = [{
             "price_date": r["date"].isoformat(),
-            "modal_price_paise": int(r["modal_price"] * 100),
-            "min_price_paise": int(r["price_min"] * 100) if r["price_min"] else None,
-            "max_price_paise": int(r["price_max"] * 100) if r["price_max"] else None,
+            # Paise per kg; numerically the same figure as Rs/quintal. See the
+            # unit note in build_observed_rows.
+            "modal_price_paise": int(round(r["modal_price"])),
+            "min_price_paise": int(round(r["price_min"])) if r["price_min"] else None,
+            "max_price_paise": int(round(r["price_max"])) if r["price_max"] else None,
             "arrival_qty_tonnes": r["total_arrival_tonnes"],
             "market_count": r["market_count"],
         } for r in rows]
@@ -103,9 +114,10 @@ def build_forecast_rows(panel_path, by_name, by_code, model_run_id=None):
             "state": "Maharashtra",
             # The date the forecast is FOR, not the date it was made.
             "price_date": (rows[-1]["date"] + timedelta(days=HORIZON_DAYS)).isoformat(),
-            "modal_price_paise": int(round(f["predicted_price"] * 100)),
-            "confidence_low_paise": int(round(f["lower_bound"] * 100)),
-            "confidence_high_paise": int(round(f["upper_bound"] * 100)),
+            # Same unit as the observed rows above: paise per kg.
+            "modal_price_paise": int(round(f["predicted_price"])),
+            "confidence_low_paise": int(round(f["lower_bound"])),
+            "confidence_high_paise": int(round(f["upper_bound"])),
             "is_prediction": True,
             "horizon_days": HORIZON_DAYS,
             "method": "REAL",

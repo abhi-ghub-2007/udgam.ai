@@ -171,8 +171,9 @@
     "method_REAL": "प्रशिक्षित मॉडेल",
     "method_HEURISTIC": "Explainable Computer Vision",
     "method_ALGORITHMIC": "अल्गोरिदम",
-    "method_SYNTHETIC": "नमुना डेटा",
-    "confidence": "खात्री"
+    "method_SYNTHETIC": "सिम्युलेटेड",
+    "confidence": "खात्री",
+    "method_MIXED": "अंशतः सिम्युलेटेड"
   },
   "assistant": {
     "open": "आवाज सहाय्यक उघडा",
@@ -505,7 +506,8 @@
       "farmer": "शेतकरी",
       "buyer": "खरेदीदार",
       "platform": "प्लॅटफॉर्म"
-    }
+    },
+    "price_per_kg": "भाव (प्रति किलो)"
   },
   "review": {
     "title": "पुनरावलोकने",
@@ -597,5 +599,26 @@
     "no_history": "या पिकासाठी व जिल्ह्यासाठी अजून पुरेसा बाजार इतिहास नाही.",
     "no_model": "या परिनियोजनावर दर मॉडेल उपलब्ध नाही.",
     "unavailable": "सध्या कोणताही अंदाज उपलब्ध नाही."
+  },
+  "rank": {
+    "highest_first": "{factor}, सर्वाधिक आधी",
+    "lowest_first": "{factor}, सर्वात कमी आधी",
+    "modal_price": "बाजारभाव",
+    "net_realization": "तुमच्या हातात येणारी रक्कम",
+    "risk_adjusted": "जोखीम वजा करून तुमच्या हातात येणारी रक्कम",
+    "unit_price": "प्रति किलो भाव",
+    "estimated_cost": "वाहतूक खर्च",
+    "distance": "अंतर",
+    "quantity_fit": "ऑर्डरचा किती भाग पूर्ण होतो",
+    "quality_fit": "प्रत जुळणी",
+    "deadline_fit": "वेळेत डिलिव्हरी",
+    "payment_reliability": "पेमेंट रेकॉर्ड",
+    "reference_id": "यादी क्रम"
+  },
+  "provenance": {
+    "source_simulated": "सिम्युलेटेड बाजार डेटा",
+    "source_agmarknet_csv": "अ‍ॅगमार्कनेट दैनिक भाव नोंदी",
+    "source_unspecified": "असत्यापित स्रोत",
+    "simulated_note": "दाखवलेले भाव फक्त प्रात्यक्षिकासाठी सिम्युलेटेड आहेत, हे थेट बाजारभाव नाहीत."
   }
 }

@@ -24,7 +24,7 @@ import {
   Card, CardSkeleton, CardTitle, EmptyState, ErrorState, Field,
   LinkButton, PageHeader, Select, cx,
 } from '@/components/ui';
-import { MethodBadge, ProvenanceStrip } from '@/components/ui/Provenance';
+import { MethodBadge, ProvenanceStrip, RankedByNote } from '@/components/ui/Provenance';
 import { ForecastCard } from '@/components/ForecastCard';
 import { money, number } from '@/utils/format';
 import type { CostLine, Opportunity } from '@/types/api';
@@ -72,7 +72,9 @@ export default function Decisions() {
           <Select id="lot" value={productId ?? ''} onChange={(e) => setSelected(e.target.value)}>
             {active.map((p) => (
               <option key={p.id} value={p.id}>
-                {p.crop_name ?? p.crop_id} · {number(p.available_quantity_kg)} {t('common.kg')}
+                {/* Never fall back to crop_id: that puts a raw UUID in the
+                    farmer's lot picker. An unnamed crop reads as "Produce". */}
+                {p.crop_name ?? t('market.produce')} · {number(p.available_quantity_kg)} {t('common.kg')}
                 {p.grade ? ` · ${t('product.grade')} ${p.grade}` : ''}
               </option>
             ))}
@@ -272,7 +274,7 @@ function Comparison({ ranked, rankedBy }: { ranked: Opportunity[]; rankedBy: str
           </div>
         );
       })}
-      <p className="text-label text-ink-muted">{t('decide.ranked_by')}: {rankedBy}</p>
+      <RankedByNote rankedBy={rankedBy} />
     </div>
   );
 }
@@ -407,7 +409,7 @@ function Markets({ data }: { data: import('@/types/api').MarketCompare }) {
           <thead>
             <tr className="border-b border-outline-variant text-label uppercase tracking-[0.04em] text-ink-muted">
               <th className="py-2 text-left font-semibold">{t('decide.market')}</th>
-              <th className="py-2 text-right font-semibold">{t('decide.price')}</th>
+              <th className="py-2 text-right font-semibold">{t('decide.price_per_kg')}</th>
               <th className="py-2 text-right font-semibold">{t('decide.trend')}</th>
               <th className="py-2 text-right font-semibold">{t('decide.distance')}</th>
             </tr>
@@ -428,8 +430,8 @@ function Markets({ data }: { data: import('@/types/api').MarketCompare }) {
           </tbody>
         </table>
       </div>
-      <ProvenanceStrip p={data.markets[0]?.provenance} />
-      <p className="text-label text-ink-muted">{t('decide.ranked_by')}: {data.ranked_by}</p>
+      <ProvenanceStrip p={data.markets[0]?.provenance} explain />
+      <RankedByNote rankedBy={data.ranked_by} />
     </Card>
   );
 }
