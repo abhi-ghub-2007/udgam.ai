@@ -21,6 +21,7 @@ import type { Role } from '@/types/api';
 const Landing = lazy(() => import('@/pages/auth/Landing'));
 const Login = lazy(() => import('@/pages/auth/Login'));
 const Signup = lazy(() => import('@/pages/auth/Signup'));
+const Welcome = lazy(() => import('@/pages/auth/Welcome'));
 const Profile = lazy(() => import('@/pages/Profile'));
 const Notifications = lazy(() => import('@/pages/Notifications'));
 
@@ -94,6 +95,9 @@ export const router = createBrowserRouter([
   {
     element: <RequireAuth><AppShell /></RequireAuth>,
     children: [
+      // Post-signup identity step. Authenticated, so PublicOnly cannot
+      // bounce it, and skippable so it never traps a new account.
+      { path: '/welcome', element: <Welcome /> },
       { path: '/profile', element: <Profile /> },
       { path: '/notifications', element: <Notifications /> },
 

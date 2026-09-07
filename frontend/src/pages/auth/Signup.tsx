@@ -11,6 +11,13 @@
  *
  * Step 3 runs against the Identity dependency (not get_current_user), because
  * the profile it creates is the thing get_current_user requires.
+ *
+ * A fourth, OPTIONAL stage follows: identity. It runs only AFTER the account
+ * fully exists, so nothing it does can leave a half-created account -- if the
+ * submission fails or the user skips, they land on their dashboard with a
+ * working account and can finish from Profile. That ordering is deliberate:
+ * guiding a new user through identity is worth doing, blocking account
+ * creation on it is not.
  */
 import { useState, type FormEvent } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
@@ -102,7 +109,11 @@ export default function Signup() {
       });
 
       await refresh();
-      navigate(`/${form.role}`, { replace: true });
+      // Account is complete and usable from here on. The identity step lives
+      // on its own authenticated route: Signup sits behind PublicOnly, which
+      // redirects a signed-in user away the moment refresh() lands, so a
+      // stage rendered here could never appear.
+      navigate('/welcome', { replace: true });
     } catch (err) {
       setErrors({ form: mapErr(err as { message?: string }) });
     } finally {

@@ -801,5 +801,17 @@
     "placeholder_pan": "ABCDE1234F",
     "placeholder_aadhaar_last4": "12 digits",
     "placeholder_gstin": "27ABCDE1234F1Z5"
+  },
+  "signup_identity": {
+    "title": "Verify your identity",
+    "why": "Add a PAN or Aadhaar so buyers, farmers and transporters know who they are dealing with. You only need one.",
+    "choose": "Which document?",
+    "skip": "Skip for now",
+    "later": "You can add or change this any time from your profile.",
+    "received_title": "Thank you, we have your document",
+    "received_body": "It is on file and awaiting review. You can start using UDGAM right away.",
+    "continue": "Continue",
+    "welcome_title": "Welcome to UDGAM, {name}",
+    "welcome_subtitle": "One last optional step, then you are ready to trade."
   }
 }
