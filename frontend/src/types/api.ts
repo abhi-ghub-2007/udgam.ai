@@ -657,3 +657,58 @@ export interface ForecastSummary {
   observed_data_status: 'REAL' | 'SYNTHETIC' | 'MIXED' | 'UNAVAILABLE';
   history_days: number;
 }
+
+/* ------------------------------------------------------ demand forecasting */
+
+export type ForecastHorizon = '3_days' | '15_days' | '30_days';
+
+/** One day of the demand curve. */
+export interface DemandForecastPoint {
+  date: string;
+  predicted_demand_kg: number;
+}
+
+/** Expected buyer demand for one crop over one horizon.
+
+    `available: false` is a normal answer, not an error: when real history is
+    too thin and simulation is off, the API refuses and reports the counts that
+    fell short rather than showing a farmer a number nobody should act on. */
+export interface DemandHorizonForecast {
+  crop: string | null;
+  crop_id?: string;
+  crop_code?: string;
+  district: string | null;
+  horizon: ForecastHorizon;
+  horizon_days: number;
+  available: boolean;
+  reason?: 'INSUFFICIENT_DATA';
+  forecast: DemandForecastPoint[];
+  total_expected_demand_kg: number | null;
+  daily_average_kg?: number;
+  trend: 'INCREASING' | 'DECREASING' | 'STABLE' | null;
+  trend_change_pct?: number;
+  /** A word, never a percentage: the data volume cannot support a validated
+      error rate, so claiming one would be false precision. */
+  reliability: 'LOW' | 'MODERATE' | 'HIGH' | null;
+  insight: 'increasing' | 'decreasing' | 'stable' | 'insufficient';
+  is_real: boolean;
+  /** REAL = from buyer orders. SYNTHETIC = clearly-marked demonstration.
+      INSUFFICIENT_DATA = refused. */
+  data_status: 'REAL' | 'SYNTHETIC' | 'INSUFFICIENT_DATA';
+  method: 'ALGORITHMIC' | null;
+  model?: string;
+  model_version?: string;
+  /** Which signals actually fed this forecast, for "Why this forecast?". */
+  factors?: string[];
+  history_days: number;
+  demand_events: number;
+  required_history_days?: number;
+  required_events?: number;
+  disclaimer?: string;
+  /** Present on simulated answers: how much REAL history exists behind it. */
+  real_data?: {
+    history_days: number;
+    demand_events: number;
+    observed_total_kg: number;
+  };
+}

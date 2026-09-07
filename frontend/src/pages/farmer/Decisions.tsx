@@ -26,6 +26,7 @@ import {
 } from '@/components/ui';
 import { MethodBadge, ProvenanceStrip, RankedByNote } from '@/components/ui/Provenance';
 import { ForecastCard } from '@/components/ForecastCard';
+import { DemandForecastPanel } from '@/components/decisions/DemandForecastPanel';
 import { money, number } from '@/utils/format';
 import type { CostLine, Opportunity } from '@/types/api';
 
@@ -96,7 +97,19 @@ export default function Decisions() {
           the same forecast rows feed the Risk-Adjusted Sale Window below. */}
       <ForecastCard cropId={lot?.crop_id} district={lot?.district ?? profile?.district ?? undefined} />
 
-      {/* 4: sell now or wait */}
+      {/* 4: how much buyers are likely to want, over 3 / 15 / 30 days.
+          Driven by the SAME `lot` the farmer already picked above -- there is
+          deliberately no second crop selector, and net exit is passed in only
+          so the decision context can phrase the trade-off. Demand never
+          changes a net-realization number. */}
+      <DemandForecastPanel
+        cropId={lot?.crop_id}
+        cropName={lot?.crop_name ?? undefined}
+        district={lot?.district ?? profile?.district ?? undefined}
+        netExit={netExit.data}
+      />
+
+      {/* 5: sell now or wait */}
       {saleWindow.isLoading ? <CardSkeleton lines={4} />
         : saleWindow.isError ? (
           <ErrorState

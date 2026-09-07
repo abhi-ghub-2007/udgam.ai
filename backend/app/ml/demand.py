@@ -56,6 +56,8 @@ SYNTHETIC = "SYNTHETIC"
 REAL = "REAL"
 
 DEMAND_LEVELS = ("LOW", "MODERATE", "HIGH")
+ALGORITHMIC = "ALGORITHMIC"
+INSUFFICIENT = "INSUFFICIENT_DATA"
 
 
 def assess_demand_data(order_rows, request_rows=()):
@@ -163,4 +165,166 @@ def forecast_demand(*, order_rows, price_rows, crop=None, district=None,
         "model_version": "1.0.0",
         "basis": "UDGAM buyer order history at crop + district",
         "data_sufficiency": assessment,
+    }
+
+
+# ===========================================================================
+# HORIZON FORECAST for the Market Decision Center
+# ===========================================================================
+
+from . import demand_horizons as dh   # noqa: E402  (kept beside its use)
+
+# Deterministic simulated demand, used ONLY when real history cannot answer a
+# horizon and only when the caller explicitly allows it. Mirrors the convention
+# market_data.py already uses for prices: generated data is stamped SYNTHETIC
+# at every layer and can never present itself as observed.
+SIMULATED_BASE_KG_PER_DAY = {
+    "vegetable": 180.0, "fruit": 120.0, "grain": 400.0,
+    "oilseed": 220.0, "fibre": 260.0, "spice": 60.0, "cash": 300.0,
+}
+SIMULATED_DEFAULT_KG_PER_DAY = 150.0
+
+
+def _sim_seed(crop_name, district):
+    """Stable per crop+district, so the demo shows the same series every time
+    rather than new numbers on every refresh."""
+    return sum(ord(c) for c in f"{(crop_name or '').upper()}|{(district or '').lower()}")
+
+
+def simulated_series(crop_name, district, category, *, today=None):
+    """A clearly-labelled DEMONSTRATION demand history. Not a measurement.
+
+    Exists because rule 43 permits a marked simulation layer when real history
+    is insufficient, and forbids silently inventing values. Every response
+    built from this carries data_status SYNTHETIC and says so in words.
+    """
+    import random
+    today = today or date.today()
+    rng = random.Random(_sim_seed(crop_name, district))
+    base = SIMULATED_BASE_KG_PER_DAY.get((category or "").lower(),
+                                         SIMULATED_DEFAULT_KG_PER_DAY)
+    base *= 0.75 + rng.random() * 0.5
+    drift = (rng.random() - 0.45) * 0.012
+    daily = {}
+    for age in range(89, -1, -1):
+        day = today - timedelta(days=age)
+        seasonal = 1.0 + 0.12 * ((day.timetuple().tm_yday % 30) / 30.0 - 0.5)
+        noise = 0.85 + rng.random() * 0.3
+        level = base * (1 + drift * (89 - age)) * seasonal * noise
+        if rng.random() < 0.55:          # not every day sees an order
+            daily[day.isoformat()] = round(max(0.0, level), 1)
+    return daily
+
+
+def _insight_key(trend, sufficient):
+    """Which farmer-facing explanation this forecast warrants."""
+    if not sufficient:
+        return "insufficient"
+    return {"INCREASING": "increasing",
+            "DECREASING": "decreasing"}.get(trend, "stable")
+
+
+def horizon_forecast(*, order_items=(), buyer_requests=(), horizon="15_days",
+                     crop=None, crop_category=None, district=None,
+                     allow_simulation=True, today=None):
+    """Demand for one crop over one horizon -- real if the data allows it.
+
+    Three possible outcomes, and the response says which:
+      available + REAL         real buyer history cleared this horizon's bar
+      available + SYNTHETIC    clearly-marked demonstration series
+      unavailable              honest refusal, with the actual counts
+
+    Never mixes the first two, and never reports a simulated figure without
+    saying so.
+    """
+    if horizon not in dh.HORIZONS:
+        raise ValueError(f"unknown horizon {horizon!r}")
+    today = today or date.today()
+
+    real_daily = dh.daily_demand_series(order_items, buyer_requests)
+    assessment = dh.assess_horizon(real_daily, horizon, today=today)
+
+    if assessment["sufficient"]:
+        result = dh.forecast_horizon(real_daily, horizon, today=today)
+        return _envelope(result, assessment, crop, district, horizon,
+                         data_status=REAL, is_real=True,
+                         factors=["historical_orders", "buyer_requests",
+                                  "recent_trend"])
+
+    if not allow_simulation:
+        return _unavailable(assessment, crop, district, horizon)
+
+    sim_daily = simulated_series(crop, district, crop_category, today=today)
+    sim_assessment = dh.assess_horizon(sim_daily, horizon, today=today)
+    if not sim_assessment["sufficient"]:
+        return _unavailable(assessment, crop, district, horizon)
+
+    result = dh.forecast_horizon(sim_daily, horizon, today=today)
+    envelope = _envelope(result, sim_assessment, crop, district, horizon,
+                         data_status=SYNTHETIC, is_real=False,
+                         factors=["simulated_demand_history", "recent_trend"])
+    # The REAL counts travel with the simulated answer, so the UI can show
+    # exactly how much genuine history exists behind the disclaimer.
+    envelope["real_data"] = assessment
+    envelope["disclaimer"] = (
+        "Simulated demand forecast. UDGAM does not yet have enough buyer "
+        "order history for this crop, so these figures are a demonstration "
+        "and must not be read as observed demand.")
+    return envelope
+
+
+def _envelope(result, assessment, crop, district, horizon, *,
+              data_status, is_real, factors):
+    # Reliability is a statement about how much REAL evidence stands behind a
+    # forecast. A simulated series can be made arbitrarily long, so grading it
+    # would report "High" for a demonstration -- precisely the false
+    # reassurance rule 20 forbids. Simulated answers carry no reliability at
+    # all; the disclaimer is the honest signal there.
+    reliability = assessment["reliability"] if is_real else None
+    return {
+        "crop": crop, "district": district,
+        "horizon": horizon,
+        "horizon_days": dh.HORIZONS[horizon],
+        "available": True,
+        "forecast": result["points"],
+        "total_expected_demand_kg": result["total_expected_demand_kg"],
+        "daily_average_kg": result["daily_average_kg"],
+        "trend": result["trend"],
+        "trend_change_pct": result["trend_change_pct"],
+        "reliability": reliability,
+        "insight": _insight_key(result["trend"], True),
+        "is_real": is_real,
+        "data_status": data_status,
+        # ALGORITHMIC describes the method whatever the data is: a weighted
+        # moving average with a damped trend. Never "AI", never "prediction".
+        "method": ALGORITHMIC,
+        "model": "udgam-demand-wma",
+        "model_version": "1.0.0",
+        "factors": factors,
+        "history_days": assessment["history_days"],
+        "demand_events": assessment["demand_events"],
+    }
+
+
+def _unavailable(assessment, crop, district, horizon):
+    """An honest refusal. Distinct from an API error, and it says what is
+    missing rather than showing a farmer a number nobody should act on."""
+    return {
+        "crop": crop, "district": district,
+        "horizon": horizon,
+        "horizon_days": dh.HORIZONS[horizon],
+        "available": False,
+        "reason": INSUFFICIENT,
+        "forecast": [],
+        "total_expected_demand_kg": None,
+        "trend": None,
+        "reliability": None,
+        "insight": "insufficient",
+        "is_real": False,
+        "data_status": INSUFFICIENT,
+        "method": None,
+        "history_days": assessment["history_days"],
+        "demand_events": assessment["demand_events"],
+        "required_history_days": assessment["required_history_days"],
+        "required_events": assessment["required_events"],
     }

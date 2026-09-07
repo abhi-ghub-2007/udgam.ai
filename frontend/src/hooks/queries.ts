@@ -12,7 +12,8 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/services/api/client';
 import type {
-  Aggregation, BuyerDashboard, Capacity, Crop, FarmerDashboard, ForecastSummary,
+  Aggregation, BuyerDashboard, Capacity, Crop, DemandHorizonForecast,
+  FarmerDashboard, ForecastHorizon, ForecastSummary,
   GradeResult,
   MarketCompare, MatchesResponse, NetExitResponse, NotificationsResponse, Order,
   OrderFeedbackState, OrderStatus, Product, ProfileReviews, BuyerRequest, Review,
@@ -464,6 +465,27 @@ export const useForecastSummary = (cropId: string | undefined, district: string 
     queryFn: () =>
       api.get<ForecastSummary>('/api/forecast/summary', {
         crop_id: cropId, district,
+      }),
+  });
+
+/** Expected buyer demand for one crop over one horizon.
+
+    Keyed on crop + horizon so switching tabs re-reads the cache instead of
+    re-hitting the API, and switching crops does not show the previous crop's
+    numbers. Demand history moves at the pace of orders, so a long staleTime is
+    honest here rather than merely convenient. */
+export const useDemandHorizon = (
+  cropId: string | undefined,
+  horizon: ForecastHorizon,
+  district?: string | null,
+) =>
+  useQuery({
+    queryKey: ['forecast', 'demand-horizon', cropId, horizon, district],
+    enabled: Boolean(cropId),
+    staleTime: 30 * 60_000,
+    queryFn: () =>
+      api.get<DemandHorizonForecast>('/api/forecast/demand/horizon', {
+        crop_id: cropId, horizon, district: district ?? undefined,
       }),
   });
 

@@ -147,6 +147,66 @@ async def demand_forecast(
     return result
 
 
+def _crop_demand_rows(crop_id: str):
+    """Platform-wide buyer-side demand for ONE crop: quantities and dates only.
+
+    Read through the service role, deliberately. Demand is a property of the
+    market, not of whoever is asking: under RLS a farmer sees only their own
+    orders, so a caller-scoped read would report a different "market demand"
+    to every user for the same crop -- the same fault already fixed in the
+    sufficiency gate.
+
+    Only what the forecast needs crosses this boundary: quantity_kg and a
+    date. No buyer identity, no price, no order id, no counterparty. Rule 35
+    permits aggregate demand and forbids leaking private transactions, and
+    this query cannot leak one because it never selects one.
+    """
+    try:
+        from ..db.admin_client import admin_client
+        admin = admin_client()
+        items = (admin.table("order_items")
+                 .select("quantity_kg, orders(placed_at, created_at)")
+                 .eq("crop_id", crop_id).limit(5000).execute()).data or []
+        requests = (admin.table("buyer_requests")
+                    .select("quantity_kg, created_at")
+                    .eq("crop_id", crop_id).limit(5000).execute()).data or []
+        return items, requests
+    except Exception:  # noqa: BLE001 - a forecast must never 500 a dashboard
+        log.warning("demand history unavailable for crop %s", crop_id, exc_info=True)
+        return [], []
+
+
+@router.get("/demand/horizon")
+async def demand_horizon(
+    user: CurrentUserDep,
+    horizon: str = Query("15_days", pattern="^(3_days|15_days|30_days)$"),
+    crop_id: str | None = None,
+    crop_code: str | None = None,
+    district: str | None = None,
+):
+    """Expected buyer demand for one crop over 3, 15 or 30 days.
+
+    Powers the Demand Forecast section of the Market Decision Center, using
+    the crop the farmer already selected there -- it does not ask again.
+
+    Three honest outcomes, and the response always says which: a forecast from
+    real buyer history, a clearly-marked simulated one, or an explicit refusal
+    carrying the counts that fell short. `30_days` is a ROLLING thirty days
+    from today, never the next calendar month.
+    """
+    crop = _crop_row(user.db, crop_id, crop_code)
+    items, requests = _crop_demand_rows(crop["id"])
+
+    result = demand_model.horizon_forecast(
+        order_items=items, buyer_requests=requests, horizon=horizon,
+        crop=crop["name_en"], crop_category=crop.get("category"),
+        district=district,
+    )
+    result["crop_id"] = crop["id"]
+    result["crop_code"] = crop["code"]
+    return result
+
+
 @router.get("/summary")
 async def forecast_summary(
     user: CurrentUserDep,
