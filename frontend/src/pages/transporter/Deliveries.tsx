@@ -9,10 +9,12 @@
 import { useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import { useQueryClient } from '@tanstack/react-query';
 import {
   useShipments, useShipmentCheckpoints, useUpdateShipmentStatus,
 } from '@/hooks/queries';
 import { useLiveLocationBroadcast } from '@/hooks/useLiveLocationBroadcast';
+import { useShipmentRealtime } from '@/hooks/useShipmentRealtime';
 import { ApiError } from '@/services/api/client';
 import { buildNavigationUrl } from '@/services/maps/navigationUrl';
 import { RoutePreview } from '@/components/maps/RoutePreview';
@@ -21,7 +23,7 @@ import {
 } from '@/components/ui';
 import { ShipmentTimeline } from '@/components/ShipmentTimeline';
 import { money, number, date } from '@/utils/format';
-import type { ShipmentStatus } from '@/types/api';
+import type { Shipment, ShipmentStatus } from '@/types/api';
 
 const NEXT_STEP: Partial<Record<ShipmentStatus, { to: 'picked_up' | 'in_transit' | 'arrived'; labelKey: string }>> = {
   assigned: { to: 'picked_up', labelKey: 'market.i_have_picked_up' },
@@ -33,12 +35,25 @@ export default function Deliveries() {
   const { id } = useParams();
   const { t } = useTranslation();
   const navigate = useNavigate();
+  const qc = useQueryClient();
   const q = useShipments();
   const checkpoints = useShipmentCheckpoints(id);
   const update = useUpdateShipmentStatus(id);
   const [error, setError] = useState<string | null>(null);
 
   const s = (q.data ?? []).find((x) => x.id === id);
+  // Patch the SAME `['shipments']` list this page reads `s` from, so a status
+  // change from elsewhere (another of the transporter's own tabs/devices
+  // cancelling the job, or the geofence marking it arrived) is reflected here
+  // without a manual refetch. This is what actually turns the live-broadcast
+  // hook off below -- `enabled` reads `s.status`, and without this the list
+  // query only ever refetches on this tab's own mutations or a window
+  // refocus, so `watchPosition` could keep reporting GPS for a job this
+  // device no longer believes is still in transit.
+  useShipmentRealtime(id, (row) => {
+    qc.setQueryData<Shipment[]>(['shipments'], (old) =>
+      (old ?? []).map((x) => (x.id === id ? { ...x, ...row } : x)));
+  });
   const tracking = useLiveLocationBroadcast(id, s?.status === 'in_transit');
 
   if (q.isLoading) return <CardSkeleton lines={5} />;
