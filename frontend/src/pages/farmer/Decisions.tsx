@@ -25,6 +25,7 @@ import {
   LinkButton, PageHeader, Select, cx,
 } from '@/components/ui';
 import { MethodBadge, ProvenanceStrip } from '@/components/ui/Provenance';
+import { ForecastCard } from '@/components/ForecastCard';
 import { money, number } from '@/utils/format';
 import type { CostLine, Opportunity } from '@/types/api';
 
@@ -88,7 +89,12 @@ export default function Decisions() {
           />
         ) : <BestExit data={netExit.data!} />}
 
-      {/* 3: sell now or wait */}
+      {/* 3: what the next week is likely to look like. Sits directly above
+          sell-or-wait because it is the evidence that decision rests on, and
+          the same forecast rows feed the Risk-Adjusted Sale Window below. */}
+      <ForecastCard cropId={lot?.crop_id} district={lot?.district ?? profile?.district ?? undefined} />
+
+      {/* 4: sell now or wait */}
       {saleWindow.isLoading ? <CardSkeleton lines={4} />
         : saleWindow.isError ? (
           <ErrorState

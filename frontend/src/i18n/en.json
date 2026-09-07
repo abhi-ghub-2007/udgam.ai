@@ -665,5 +665,31 @@
     "failed_to_load": "Could not load the map. Check your connection and try again.",
     "search_hint": "Search for a place, or tap the map to drop a pin.",
     "route_unavailable": "Could not calculate the route right now."
+  },
+  "forecast": {
+    "title": "Price outlook",
+    "current": "Today",
+    "in_days": "In {days} days",
+    "per_quintal": "per quintal (₹/quintal)",
+    "expected_range": "expected range",
+    "trend_RISING": "Rising",
+    "trend_FALLING": "Falling",
+    "trend_STABLE": "Steady",
+    "coverage_note": "The true price landed inside this range {pct}% of the time in testing.",
+    "demand": "Demand",
+    "demand_HIGH": "High",
+    "demand_MODERATE": "Moderate",
+    "demand_LOW": "Low",
+    "demand_synthetic_note": "Demonstration signal only — UDGAM does not yet have enough buyer orders to forecast demand.",
+    "updated_days_ago": "market data {days} days old",
+    "how_computed": "How this was calculated",
+    "model": "Model",
+    "trained_on": "Trained on",
+    "accuracy": "Typical error",
+    "mae_vs_baseline": "₹{mae}/quintal vs ₹{baseline} for a no-model guess",
+    "limitations": "Based on about 10 months of mandi history, so seasonal patterns beyond that are not yet learned.",
+    "no_history": "Not enough market history for this crop and district yet.",
+    "no_model": "The price model is not available on this deployment.",
+    "unavailable": "No forecast available right now."
   }
 }

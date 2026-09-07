@@ -583,3 +583,77 @@ export interface Aggregation {
   accepted_kg?: number;
   awaiting_consent?: number;
 }
+
+/* ----------------------------------------------------------- forecasting */
+
+/** A 7-day price forecast, or a stated reason there isn't one.
+
+    `available: false` is a normal response, not an error: a crop and district
+    with too little history, or a deployment with no model artifact, says so
+    instead of returning a number nobody should act on. */
+export interface PriceForecast {
+  crop: string | null;
+  district: string | null;
+  forecast_horizon_days: number;
+  available: boolean;
+  reason?: 'model_unavailable' | 'unsupported_horizon' | 'insufficient_history'
+         | 'unstable_prediction';
+  message?: string;
+  current_price?: number;
+  predicted_price: number | null;
+  lower_bound: number | null;
+  upper_bound: number | null;
+  price_unit?: string;
+  trend: 'RISING' | 'FALLING' | 'STABLE' | null;
+  /** Share of unseen test residuals that fell inside the band -- measured, not
+      a confidence percentage chosen to look reassuring. */
+  interval_coverage?: number;
+  model?: string;
+  model_version?: string;
+  data_status?: MethodLabel;
+  data_source?: string;
+  trained_at?: string;
+  training_period?: { start: string; end: string };
+  latest_observation?: string;
+  data_age_days?: number;
+  test_mae?: number;
+  baseline_mae?: number;
+  improvement_vs_naive_pct?: number;
+  observed_data_status?: 'REAL' | 'SYNTHETIC' | 'MIXED' | 'UNAVAILABLE';
+}
+
+/** Demand outlook. `is_real` false means this is a labelled SYNTHETIC
+    demonstration signal -- UDGAM does not yet have the buyer-side order
+    history a real demand model needs, and mandi arrival volume is supply. */
+export interface DemandForecast {
+  crop: string | null;
+  district: string | null;
+  forecast_horizon_days: number;
+  demand_level: 'LOW' | 'MODERATE' | 'HIGH';
+  is_real: boolean;
+  method: MethodLabel;
+  data_status: MethodLabel;
+  model: string;
+  model_version: string;
+  basis: string;
+  disclaimer?: string;
+  market_arrival_tonnes?: number;
+  arrival_change_pct?: number | null;
+  predicted_quantity_kg?: number;
+  data_sufficiency?: {
+    order_count: number;
+    distinct_order_days: number;
+    required_orders: number;
+    sufficient_for_real_model: boolean;
+    reason: string | null;
+  };
+}
+
+export interface ForecastSummary {
+  crop: { id: string; code: string; name: string };
+  district: string;
+  price: PriceForecast;
+  demand: DemandForecast;
+  observed_data_status: 'REAL' | 'SYNTHETIC' | 'MIXED' | 'UNAVAILABLE';
+  history_days: number;
+}

@@ -12,7 +12,8 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/services/api/client';
 import type {
-  Aggregation, BuyerDashboard, Capacity, Crop, FarmerDashboard, GradeResult,
+  Aggregation, BuyerDashboard, Capacity, Crop, FarmerDashboard, ForecastSummary,
+  GradeResult,
   MarketCompare, MatchesResponse, NetExitResponse, NotificationsResponse, Order,
   OrderFeedbackState, OrderStatus, Product, ProfileReviews, BuyerRequest, Review,
   SaleWindowResponse, Shipment, ShipmentDetails, TransportJob,
@@ -445,6 +446,25 @@ export const useSaleWindow = (productId: string | undefined) =>
     queryKey: ['decisions', 'sale-window', productId],
     enabled: Boolean(productId),
     queryFn: () => api.get<SaleWindowResponse>('/api/decisions/sale-window', { product_id: productId }),
+  });
+
+/** 7-day price + demand outlook for one crop in one district.
+
+    One request rather than two so the card cannot show a price forecast and a
+    demand signal captured at different moments. `enabled` keeps it from firing
+    until both keys exist -- the Decision Center renders before a listing is
+    picked. */
+export const useForecastSummary = (cropId: string | undefined, district: string | undefined) =>
+  useQuery({
+    queryKey: ['forecast', 'summary', cropId, district],
+    enabled: Boolean(cropId && district),
+    // A daily mandi forecast does not change between two clicks; refetching it
+    // on every focus would be pure noise against the API.
+    staleTime: 30 * 60_000,
+    queryFn: () =>
+      api.get<ForecastSummary>('/api/forecast/summary', {
+        crop_id: cropId, district,
+      }),
   });
 
 /* --------------------------------------------------------- notifications */

@@ -1,0 +1,125 @@
+{
+  "model_name": "udgam-price-ridge",
+  "model_version": "1.1.0",
+  "algorithm": "ridge_regression_closed_form_log_target",
+  "trained_at": "2026-09-07T10:51:45.876265+00:00",
+  "horizon_days": 7,
+  "features": [
+    "price_lag_1",
+    "price_lag_7",
+    "price_lag_14",
+    "roll_mean_7",
+    "roll_mean_14",
+    "roll_std_7",
+    "price_change_7",
+    "arrival_lag_1",
+    "arrival_roll_7",
+    "spread_ratio",
+    "market_count",
+    "dow",
+    "month"
+  ],
+  "log_features": [
+    "price_lag_1",
+    "price_lag_7",
+    "price_lag_14",
+    "roll_mean_7",
+    "roll_mean_14"
+  ],
+  "log_target": true,
+  "target": "log(modal_price) at t+7 days, Rs/quintal",
+  "weights": [
+    0.07255767839302629,
+    0.27874663728749266,
+    0.02852075562854186,
+    0.358691338298266,
+    -0.10362899831309577,
+    -0.00843548966731787,
+    0.0923009579085082,
+    0.01649298211623541,
+    -0.02226819192971494,
+    0.012300383586554246,
+    0.0016108848223620783,
+    0.0046126513427987145,
+    -0.02866513999659988,
+    7.105317571389529
+  ],
+  "feature_mean": [
+    7.1185277025010425,
+    7.125854871277059,
+    7.136171341960533,
+    7.137033252141356,
+    7.1457174525178875,
+    275.2183871909093,
+    1.03578481061415,
+    406.5045121709874,
+    411.9635649260697,
+    0.8828857433799634,
+    2.0904413219869387,
+    2.8260439342964574,
+    5.136750445280032
+  ],
+  "feature_std": [
+    0.6775548204301888,
+    0.6840655663105758,
+    0.6919260990690813,
+    0.6587472897169068,
+    0.6567198915285428,
+    283.602168674097,
+    0.3191772655993433,
+    1898.4627066156106,
+    1861.7300505397293,
+    0.7684790501100152,
+    1.7472190063230002,
+    1.9558805068167442,
+    3.8999587813720087
+  ],
+  "interval": {
+    "target_coverage": 0.8,
+    "mode": "multiplicative",
+    "factor": 1.3934,
+    "measured_coverage": 0.8453,
+    "measured_coverage_fixed_rupees": 0.8282,
+    "fixed_half_width": 564.78,
+    "measured_on": "test fold, unseen by fitting and calibration"
+  },
+  "training": {
+    "data_source": "agmarknet_daily_price_arrival_csv",
+    "data_status": "REAL",
+    "state": "Maharashtra",
+    "crops": [
+      "Brinjal",
+      "Cabbage",
+      "Spinach"
+    ],
+    "series_count": 48,
+    "train_start": "2025-11-14",
+    "train_end": "2026-06-04",
+    "valid_end": "2026-07-17",
+    "test_end": "2026-08-30",
+    "n_train": 5053,
+    "n_valid": 1093,
+    "n_test": 1228
+  },
+  "metrics": {
+    "validation": {
+      "MAE": 394.56,
+      "RMSE": 606.78,
+      "sMAPE": 20.98,
+      "n": 1093
+    },
+    "test": {
+      "MAE": 341.27,
+      "RMSE": 503.74,
+      "sMAPE": 18.61,
+      "n": 1228
+    },
+    "test_baseline_naive": {
+      "MAE": 380.39,
+      "RMSE": 580.86,
+      "sMAPE": 20.13,
+      "n": 1228
+    },
+    "improvement_vs_naive_pct": 10.28
+  }
+}

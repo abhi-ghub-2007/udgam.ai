@@ -35,3 +35,11 @@ scratch/
 frontend/node_modules/
 frontend/dist/
 frontend/dev-dist/
+
+# ML data: raw mandi CSVs are large and not app source
+data/raw/
+data/processed/
+# The trained artifact is 4KB of JSON and MUST deploy with the app --
+# the API loads it at runtime. Only the heavy backtest outputs are ignored.
+backend/app/ml/artifacts/backtest.json
+backend/app/ml/artifacts/chronos_challenger.json
