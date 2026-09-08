@@ -57,8 +57,15 @@ app.include_router(verification.router)
 app.include_router(grievances.router)
 
 
-@app.get("/", tags=["meta"])
-async def root():
+@app.get("/api", tags=["meta"])
+async def api_root():
+    """Service identity.
+
+    This lives at /api rather than / because when the SPA is present this
+    process IS the website, and somebody typing the bare hostname is a person
+    looking for UDGAM, not a machine asking which service answers here. The
+    root path belongs to the app; the JSON moved rather than fighting it.
+    """
     return {"name": "UDGAM.ai", "version": app.version, "docs": "/docs"}
 
 
@@ -80,6 +87,14 @@ async def root():
 #                       (Vercel/Netlify/Pages) still works exactly as before.
 # ---------------------------------------------------------------------------
 _DIST = Path(__file__).resolve().parents[2] / "frontend" / "dist"
+
+if not _DIST.is_dir():
+    # No build present (a backend-only checkout, or `npm run build` not yet
+    # run). Keep the bare hostname answering something honest rather than a
+    # bare 404, since with no SPA there is nothing else for it to serve.
+    @app.get("/", tags=["meta"], include_in_schema=False)
+    async def root_no_spa():
+        return {"name": "UDGAM.ai", "version": app.version, "docs": "/docs"}
 
 if _DIST.is_dir():
     app.mount("/assets", StaticFiles(directory=_DIST / "assets"), name="spa-assets")
