@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { Badge, Card, CardSkeleton, EmptyState, ErrorState, cx } from '@/components/ui';
 import { money, number, date } from '@/utils/format';
@@ -92,7 +93,7 @@ export function OrderList({ orders, loading, error, onRetry, side, linkTo }: Pro
               </Card>
             );
             return linkTo
-              ? <a key={o.id} href={linkTo(o)} className="block">{body}</a>
+              ? <Link key={o.id} to={linkTo(o)} className="block">{body}</Link>
               : <div key={o.id}>{body}</div>;
           })}
         </div>
