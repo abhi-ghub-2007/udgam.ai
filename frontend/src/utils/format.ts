@@ -26,6 +26,18 @@ export function date(iso: string | null | undefined): string {
   return new Intl.DateTimeFormat('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }).format(d);
 }
 
+/** Date AND time. A case timeline needs the clock: "acknowledged 10:44,
+    resolved 12:30" is the thing that makes it an audit trail rather than a
+    list of days. */
+export function dateTime(iso: string | null | undefined): string {
+  if (!iso) return '';
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return '';
+  return new Intl.DateTimeFormat('en-IN', {
+    day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit',
+  }).format(d);
+}
+
 export function relativeDays(iso: string | null | undefined): number | null {
   if (!iso) return null;
   const d = new Date(iso);

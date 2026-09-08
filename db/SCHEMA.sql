@@ -1718,4 +1718,251 @@ drop policy if exists verification_events_own on public.verification_events;
 create policy verification_events_own on public.verification_events
   for select to authenticated using (profile_id = auth.uid());
 
+
+-- ===========================================================================
+-- 16. GRIEVANCE & ACCOUNTABILITY
+--
+-- Every transaction on UDGAM involves at least two strangers and often three.
+-- Without a place to raise a problem, the only recourse is to stop using the
+-- platform -- which is exactly the failure mode the intermediaries we are
+-- replacing already have. This section is the accountability layer.
+--
+-- THE SECURITY SHAPE, AND WHY
+-- ---------------------------
+-- A dispute record is the one thing on the platform that a participant has a
+-- direct incentive to rewrite. So:
+--
+--   * status is NEVER writable by a client. There is no UPDATE policy on
+--     `grievances` at all, and a trigger additionally pins status, resolution
+--     and respondent for any write that does not arrive as the service role.
+--     Belt and braces on purpose: the policy is the lock, the trigger is what
+--     survives somebody later adding a policy without thinking it through.
+--   * a case is readable ONLY by its two participants. Not by the counterparty
+--     of some other order, not by anyone who guesses a case number.
+--   * `grievance_events` has no INSERT policy. An audit trail a participant can
+--     write is not an audit trail.
+--
+-- Messages are the deliberate exception: they are inserted through the
+-- sender's own JWT-bound client, so Postgres itself checks that the sender is
+-- a participant and that they are not writing in somebody else's name.
+-- ===========================================================================
+
+do $$ begin
+  create type grievance_status as enum (
+    'OPEN',             -- submitted, nobody has picked it up yet
+    'ACKNOWLEDGED',     -- the respondent has seen it
+    'UNDER_REVIEW',     -- the respondent is looking into it
+    'ACTION_REQUIRED',  -- waiting on the complainant (info, or an offer to accept)
+    'RESOLVED',         -- the COMPLAINANT confirmed it is settled
+    'REOPENED',         -- the complainant did not agree it was settled
+    'ESCALATED',        -- flagged for platform review
+    'CLOSED'            -- finished, archived
+  );
+exception when duplicate_object then null; end $$;
+
+-- Case numbers must be unique under concurrency and must read like a reference
+-- somebody can quote over the phone. A sequence gives both without a race --
+-- generating one by counting existing rows would hand two simultaneous
+-- submissions the same number.
+create sequence if not exists public.grievance_case_seq;
+
+create table if not exists public.grievances (
+  id            uuid primary key default gen_random_uuid(),
+  case_number   text not null unique
+                default 'UDG-GRV-' || to_char(now(), 'YYYY') || '-' ||
+                        lpad(nextval('public.grievance_case_seq')::text, 5, '0'),
+
+  created_by    uuid not null references public.profiles(id) on delete cascade,
+  -- The other side, where there is one. Null for cases about the platform
+  -- itself (account/verification) -- putting a stranger on the hook for our
+  -- own queue would be worse than having no respondent.
+  respondent_id uuid references public.profiles(id) on delete set null,
+  -- The complainant's role AT THE TIME. Roles can change; the record of who
+  -- was complaining as what must not.
+  created_role  user_role not null,
+
+  category      text not null,
+  subcategory   text not null,
+  description   text not null,
+  status        grievance_status not null default 'OPEN',
+
+  -- Context, attached automatically by the backend from whatever screen the
+  -- case was opened on. A user is never asked to retype an order number.
+  related_order_id     uuid references public.orders(id) on delete set null,
+  related_shipment_id  uuid references public.shipments(id) on delete set null,
+  related_product_id   uuid references public.products(id) on delete set null,
+  related_request_id   uuid references public.buyer_requests(id) on delete set null,
+  -- The order's status when the case was raised. The order moves on; the
+  -- complaint is about the moment it was made.
+  context_snapshot     jsonb not null default '{}'::jsonb,
+
+  resolution        text,      -- one of services/grievance.py RESOLUTIONS
+  resolution_note   text,
+  -- What the respondent offered, kept even if the complainant never accepted
+  -- it. Both sides' positions survive.
+  proposed_resolution text,
+
+  created_at    timestamptz not null default now(),
+  updated_at    timestamptz not null default now(),
+  resolved_at   timestamptz,
+  closed_at     timestamptz,
+
+  -- You cannot file a grievance against yourself.
+  check (respondent_id is null or respondent_id <> created_by)
+);
+
+create index if not exists idx_grievances_mine
+  on public.grievances(created_by, created_at desc);
+create index if not exists idx_grievances_against
+  on public.grievances(respondent_id, created_at desc);
+create index if not exists idx_grievances_order
+  on public.grievances(related_order_id);
+
+create table if not exists public.grievance_messages (
+  id           uuid primary key default gen_random_uuid(),
+  grievance_id uuid not null references public.grievances(id) on delete cascade,
+  sender_id    uuid not null references public.profiles(id) on delete cascade,
+  message      text not null check (length(message) between 1 and 2000),
+  created_at   timestamptz not null default now()
+);
+
+create index if not exists idx_grievance_messages_case
+  on public.grievance_messages(grievance_id, created_at);
+
+create table if not exists public.grievance_evidence (
+  id           uuid primary key default gen_random_uuid(),
+  grievance_id uuid not null references public.grievances(id) on delete cascade,
+  uploaded_by  uuid not null references public.profiles(id) on delete cascade,
+  -- A path into a PRIVATE bucket. Never a public URL: evidence in a dispute
+  -- is the participants' business and nobody else's, so it is only ever handed
+  -- out as a short-lived signed URL after the backend has checked the caller.
+  storage_path text not null,
+  file_type    text not null,
+  file_size    integer not null check (file_size > 0),
+  created_at   timestamptz not null default now()
+);
+
+create index if not exists idx_grievance_evidence_case
+  on public.grievance_evidence(grievance_id, created_at);
+
+-- The timeline. Append-only, system-written, and the thing that makes a
+-- resolution auditable rather than merely asserted.
+create table if not exists public.grievance_events (
+  id           uuid primary key default gen_random_uuid(),
+  grievance_id uuid not null references public.grievances(id) on delete cascade,
+  actor_id     uuid references public.profiles(id) on delete set null,
+  actor_party  text,                    -- 'complainant' | 'respondent' | 'system'
+  event_type   text not null,
+  from_status  grievance_status,
+  to_status    grievance_status,
+  metadata     jsonb not null default '{}'::jsonb,
+  created_at   timestamptz not null default now()
+);
+
+create index if not exists idx_grievance_events_case
+  on public.grievance_events(grievance_id, created_at);
+
+drop trigger if exists trg_touch_grievances on public.grievances;
+create trigger trg_touch_grievances before update on public.grievances
+  for each row execute function public.touch_updated_at();
+
+-- ---------------------------------------------------------------------------
+-- THE ENFORCEMENT: a participant may argue, never adjudicate.
+-- ---------------------------------------------------------------------------
+-- SECURITY INVOKER for the same reason as the KYC triggers: a DEFINER function
+-- runs as its owner, so current_user would read 'postgres' and the service-role
+-- exemption could never match, making every status change impossible.
+create or replace function public.grievance_status_is_system_owned()
+returns trigger language plpgsql as $$
+begin
+  if current_user = 'service_role' then
+    return new;                        -- backend decision, after authorisation
+  end if;
+  -- Anything that asserts an outcome is pinned to what it already was.
+  new.status              := old.status;
+  new.resolution          := old.resolution;
+  new.resolution_note     := old.resolution_note;
+  new.proposed_resolution := old.proposed_resolution;
+  new.resolved_at         := old.resolved_at;
+  new.closed_at           := old.closed_at;
+  new.case_number         := old.case_number;
+  new.created_by          := old.created_by;
+  new.respondent_id       := old.respondent_id;
+  return new;
+end $$;
+
+drop trigger if exists trg_grievance_status_locked on public.grievances;
+create trigger trg_grievance_status_locked
+  before update on public.grievances
+  for each row execute function public.grievance_status_is_system_owned();
+
+-- ---------------------------------------------------------------------------
+-- RLS
+-- ---------------------------------------------------------------------------
+
+alter table public.grievances          enable row level security;
+alter table public.grievance_messages  enable row level security;
+alter table public.grievance_evidence  enable row level security;
+alter table public.grievance_events    enable row level security;
+
+-- A case belongs to exactly two people (sometimes one). Nobody else can read
+-- it, whatever they know about it.
+drop policy if exists grievances_participants on public.grievances;
+create policy grievances_participants on public.grievances
+  for select to authenticated
+  using (created_by = auth.uid() or respondent_id = auth.uid());
+
+-- No INSERT/UPDATE/DELETE policy on purpose. Creation has to derive the
+-- respondent and the context snapshot from the order -- facts the client must
+-- not get to choose -- so it happens in the backend after authorisation, on
+-- the same footing as notifications. Default deny does the rest.
+
+drop policy if exists grievance_messages_participants on public.grievance_messages;
+create policy grievance_messages_participants on public.grievance_messages
+  for select to authenticated
+  using (exists (
+    select 1 from public.grievances g
+    where g.id = grievance_id
+      and (g.created_by = auth.uid() or g.respondent_id = auth.uid())
+  ));
+
+-- Messages ARE written through the sender's own client, so Postgres checks
+-- both that they are on the case and that they are not writing under somebody
+-- else's name. This is the RLS doing real work, not the backend's promise.
+drop policy if exists grievance_messages_write on public.grievance_messages;
+create policy grievance_messages_write on public.grievance_messages
+  for insert to authenticated
+  with check (
+    sender_id = auth.uid()
+    and exists (
+      select 1 from public.grievances g
+      where g.id = grievance_id
+        and (g.created_by = auth.uid() or g.respondent_id = auth.uid())
+    )
+  );
+
+drop policy if exists grievance_evidence_participants on public.grievance_evidence;
+create policy grievance_evidence_participants on public.grievance_evidence
+  for select to authenticated
+  using (exists (
+    select 1 from public.grievances g
+    where g.id = grievance_id
+      and (g.created_by = auth.uid() or g.respondent_id = auth.uid())
+  ));
+
+-- Evidence rows are written by the backend, which is what holds the storage
+-- credential; a client-written row could point at a path it never uploaded.
+
+drop policy if exists grievance_events_participants on public.grievance_events;
+create policy grievance_events_participants on public.grievance_events
+  for select to authenticated
+  using (exists (
+    select 1 from public.grievances g
+    where g.id = grievance_id
+      and (g.created_by = auth.uid() or g.respondent_id = auth.uid())
+  ));
+
+-- Deliberately no INSERT policy: see the header. The timeline is the system's
+-- account of what happened, not a party's.
+
 commit;

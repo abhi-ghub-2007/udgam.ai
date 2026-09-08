@@ -2,6 +2,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useOrder } from '@/hooks/queries';
 import { Badge, Button, Card, CardSkeleton, ErrorState, PageHeader } from '@/components/ui';
+import { ReportIssueButton } from '@/components/grievance/GrievanceBits';
 import { money, number, date } from '@/utils/format';
 
 export default function JobDetail() {
@@ -23,7 +24,11 @@ export default function JobDetail() {
 
   return (
     <div className="space-y-6">
-      <PageHeader title={o.order_no} subtitle={t('transporter.job_details')} />
+      <PageHeader
+        title={o.order_no}
+        subtitle={t('transporter.job_details')}
+        actions={<ReportIssueButton orderId={o.id} />}
+      />
       <Card className="max-w-2xl space-y-4">
         <Badge tone="info">{t(`order.status.${o.status}`)}</Badge>
 

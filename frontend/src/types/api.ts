@@ -772,3 +772,118 @@ export interface PublicTrust {
   verified_credentials: CredentialType[];
   verified_count: number;
 }
+
+/* ------------------------------------------------------- grievances */
+
+/** The lifecycle as the DATABASE stores it. The user never sees these strings:
+    the UI renders `grievance.status_<lowercased>` so "ACTION_REQUIRED" reads as
+    "Action needed" in whichever language the user chose. */
+export type GrievanceStatus =
+  | 'OPEN' | 'ACKNOWLEDGED' | 'UNDER_REVIEW' | 'ACTION_REQUIRED'
+  | 'RESOLVED' | 'REOPENED' | 'ESCALATED' | 'CLOSED';
+
+/** Which side of a case you are on. Null means neither, which the backend
+    would already have refused -- it is here only so the type is honest. */
+export type GrievanceParty = 'complainant' | 'respondent' | null;
+
+export interface Grievance {
+  id: string;
+  case_number: string;
+  created_by: string;
+  respondent_id: string | null;
+  created_role: string;
+  category: string;
+  subcategory: string;
+  description: string;
+  status: GrievanceStatus;
+  related_order_id: string | null;
+  related_shipment_id: string | null;
+  /** The order as it stood WHEN THE CASE WAS RAISED. The order moves on; the
+      complaint is about that moment. */
+  context_snapshot: {
+    order_no?: string;
+    order_status?: string;
+    shipment_status?: string | null;
+    logistics_arranged_by?: string;
+    captured_at?: string;
+  };
+  resolution: string | null;
+  resolution_note: string | null;
+  /** What the respondent offered. Kept even when it was never accepted, so
+      both sides' positions survive on the record. */
+  proposed_resolution: string | null;
+  created_at: string;
+  updated_at: string | null;
+  resolved_at: string | null;
+  closed_at: string | null;
+}
+
+/** The row shape the list endpoint returns -- a summary, not the whole case. */
+export interface GrievanceSummaryRow {
+  id: string;
+  case_number: string;
+  category: string;
+  subcategory: string;
+  status: GrievanceStatus;
+  my_party: GrievanceParty;
+  counterparty_name: string | null;
+  order_no: string | null;
+  related_order_id: string | null;
+  created_at: string;
+  updated_at: string | null;
+}
+
+export interface GrievanceEvent {
+  id: string;
+  actor_id: string | null;
+  actor_party: string | null;
+  event_type: string;
+  from_status: GrievanceStatus | null;
+  to_status: GrievanceStatus | null;
+  metadata: Record<string, unknown>;
+  created_at: string;
+}
+
+export interface GrievanceMessage {
+  id: string;
+  sender_id: string;
+  sender_name: string | null;
+  sender_party: 'complainant' | 'respondent';
+  message: string;
+  created_at: string;
+}
+
+/** No storage path and no URL. A link is issued separately, signed, and only
+    to a participant -- evidence in a dispute is nobody else's business. */
+export interface GrievanceEvidence {
+  id: string;
+  uploaded_by: string;
+  file_type: string;
+  file_size: number;
+  created_at: string;
+}
+
+export interface GrievanceDetail {
+  case: Grievance;
+  my_party: GrievanceParty;
+  counterparty_name: string | null;
+  timeline: GrievanceEvent[];
+  messages: GrievanceMessage[];
+  evidence: GrievanceEvidence[];
+  /** What the server says this caller may do. Drives which buttons render; it
+      does NOT authorise them -- POST /actions re-derives the same answer. */
+  available_actions: string[];
+  resolutions: string[];
+}
+
+export interface GrievanceList {
+  cases: GrievanceSummaryRow[];
+  summary: { open: number; resolved: number; total: number };
+}
+
+export interface GrievanceTaxonomy {
+  categories: Record<string, string[]>;
+  resolutions: string[];
+  /** Categories with no counterparty: they are about the platform itself. */
+  platform_only: string[];
+}

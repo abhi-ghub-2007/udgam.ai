@@ -15,6 +15,7 @@ import {
 } from '@/components/ui';
 import { money, number } from '@/utils/format';
 import { ProductCard } from '@/components/ProductCard';
+import { ImpactPanel } from '@/components/ImpactPanel';
 
 export default function FarmerHome() {
   const { t } = useTranslation();
@@ -116,6 +117,10 @@ export default function FarmerHome() {
             </div>
           )}
       </section>
+      {/* Counted from platform records, labelled as such. Sits at the
+          end because it is context, not the reason anyone opened this
+          page. */}
+      <ImpactPanel />
     </div>
   );
 }

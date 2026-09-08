@@ -110,8 +110,30 @@ def grade_image(image_bytes: bytes, crop_code: str | None = None) -> Grade:
     # Detect high gradient variations (edges) and local color anomalies inside the produce body
     # Smooth surfaces = low edge density and uniform local intensity
     edges = cv2.Canny(gray, 30, 100)
-    # Exclude the outer boundary of the mask to avoid counting the crop edge as a blemish
-    eroded_mask = cv2.erode(mask, np.ones((7, 7), np.uint8), iterations=2)
+
+    # Exclude the outer boundary of the mask so the produce's own silhouette is
+    # not counted as a blemish.
+    #
+    # The mask comes from saturation, and a dark blemish has almost none -- so
+    # it is segmented OUT and leaves a hole. Eroding that mask directly then
+    # pushed the measured region ~12px away from every hole edge, which is
+    # further than a typical blemish is wide: the erosion meant to remove the
+    # outer rim was quietly deleting the very defects this score exists to
+    # find. Measured before the fix: blemish_score stayed pinned at 99 from 0%
+    # to 80% blemish coverage, and the OVERALL score went UP with damage
+    # (81.9 -> 89.4) because the extra edges read as sharpness.
+    #
+    # So: fill internal holes first, erode the solid silhouette, and measure the
+    # ORIGINAL image inside it. The rim goes, the blemishes stay.
+    filled = mask.copy()
+    flood = np.zeros((h + 2, w + 2), np.uint8)
+    # Flooding the background inward from a corner leaves only enclosed holes
+    # unfilled. If the produce touches that corner there is nothing to flood,
+    # `holes` comes back empty and this degrades to the plain mask.
+    cv2.floodFill(filled, flood, (0, 0), 255)
+    holes = cv2.bitwise_not(filled)
+    solid = cv2.bitwise_or(mask, holes)
+    eroded_mask = cv2.erode(solid, np.ones((7, 7), np.uint8), iterations=2)
     internal_edges = cv2.bitwise_and(edges, edges, mask=eroded_mask)
     eroded_area = max(1, cv2.countNonZero(eroded_mask))
     edge_density = cv2.countNonZero(internal_edges) / eroded_area

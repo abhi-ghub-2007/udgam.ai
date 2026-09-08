@@ -7,6 +7,7 @@ import {
 } from '@/components/ui';
 import { ProductCard } from '@/components/ProductCard';
 import { money, number } from '@/utils/format';
+import { ImpactPanel } from '@/components/ImpactPanel';
 
 export default function BuyerHome() {
   const { t } = useTranslation();
@@ -76,6 +77,10 @@ export default function BuyerHome() {
           </div>
         </section>
       )}
+      {/* Counted from platform records, labelled as such. Sits at the
+          end because it is context, not the reason anyone opened this
+          page. */}
+      <ImpactPanel />
     </div>
   );
 }

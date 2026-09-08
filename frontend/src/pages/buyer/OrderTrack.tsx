@@ -8,6 +8,7 @@ import { TransportPanel } from '@/components/TransportPanel';
 import { TrackingPanel } from '@/components/TrackingPanel';
 import { ReputationPanel, ReviewPanel } from '@/components/Reputation';
 import { Badge, Button, Card, CardSkeleton, CardTitle, ErrorState, PageHeader, cx } from '@/components/ui';
+import { ReportIssueButton } from '@/components/grievance/GrievanceBits';
 import { money, number, date } from '@/utils/format';
 import type { OrderStatus } from '@/types/api';
 
@@ -56,7 +57,15 @@ export default function OrderTrack() {
 
   return (
     <div className="space-y-6">
-      <PageHeader title={o.order_no} subtitle={t('order.track_title')} />
+      {/* Reporting a problem belongs on the screen where the problem is
+          visible, not three menus away. The order id rides along so the case
+          opens with the order, the counterparty and the order's status already
+          attached -- nobody retypes an order number into a complaint. */}
+      <PageHeader
+        title={o.order_no}
+        subtitle={t('order.track_title')}
+        actions={<ReportIssueButton orderId={o.id} />}
+      />
 
       <Card className="max-w-2xl space-y-5">
         <div className="flex flex-wrap items-center justify-between gap-2">

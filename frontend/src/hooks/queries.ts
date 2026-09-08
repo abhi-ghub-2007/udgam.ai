@@ -14,7 +14,8 @@ import { api } from '@/services/api/client';
 import type {
   Aggregation, BuyerDashboard, Capacity, Crop, DemandHorizonForecast,
   Credential, FarmerDashboard, ForecastHorizon, ForecastSummary,
-  GradeResult,
+  GradeResult, Grievance, GrievanceDetail, GrievanceEvidence, GrievanceList,
+  GrievanceMessage, GrievanceTaxonomy,
   MarketCompare, MatchesResponse, NetExitResponse, NotificationsResponse, Order,
   OrderFeedbackState, OrderStatus, Product, ProfileReviews, BuyerRequest, Review,
   SaleWindowResponse, Shipment, ShipmentDetails, TransportJob,
@@ -573,5 +574,89 @@ export function useUpdateProfile() {
   return useMutation({
     mutationFn: (body: Record<string, unknown>) => api.patch<unknown>('/api/profiles/me', body),
     onSuccess: () => void qc.invalidateQueries({ queryKey: ['profile'] }),
+  });
+}
+
+/* ------------------------------------------------------------ grievances */
+
+/** What may be reported. Served by the backend so the two can never disagree
+    -- a category the client offers but the server rejects is a dead end. */
+export const useGrievanceTaxonomy = () =>
+  useQuery({
+    queryKey: ['grievances', 'taxonomy'],
+    queryFn: () => api.get<GrievanceTaxonomy>('/api/grievances/taxonomy'),
+    staleTime: 60 * 60_000,   // vocabulary, not data
+  });
+
+/** Every case the caller is a party to, either side. RLS decides which. */
+export const useGrievances = () =>
+  useQuery({
+    queryKey: ['grievances', 'mine'],
+    queryFn: () => api.get<GrievanceList>('/api/grievances'),
+  });
+
+export const useGrievance = (id: string | undefined) =>
+  useQuery({
+    queryKey: ['grievances', id],
+    queryFn: () => api.get<GrievanceDetail>(`/api/grievances/${id}`),
+    enabled: !!id,
+  });
+
+export function useCreateGrievance() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (body: {
+      category: string; subcategory: string; description: string;
+      related_order_id?: string | null;
+    }) => api.post<{ case: Grievance }>('/api/grievances', body),
+    onSuccess: () => void qc.invalidateQueries({ queryKey: ['grievances'] }),
+  });
+}
+
+export function useGrievanceMessage(id: string | undefined) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (message: string) =>
+      api.post<{ message: GrievanceMessage }>(`/api/grievances/${id}/messages`, { message }),
+    onSuccess: () => void qc.invalidateQueries({ queryKey: ['grievances', id] }),
+  });
+}
+
+/** Move the case. Sends an ACTION, never a status -- there is no request shape
+    here that could carry one. */
+export function useGrievanceAction(id: string | undefined) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (body: { action: string; resolution?: string; note?: string }) =>
+      api.post<{ case: Grievance; available_actions: string[] }>(
+        `/api/grievances/${id}/actions`, body),
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: ['grievances', id] });
+      void qc.invalidateQueries({ queryKey: ['grievances', 'mine'] });
+      void qc.invalidateQueries({ queryKey: ['notifications'] });
+    },
+  });
+}
+
+export function useUploadEvidence(id: string | undefined) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (file: File) => {
+      const fd = new FormData();
+      fd.append('file', file);
+      return api.post<{ evidence: GrievanceEvidence }>(
+        `/api/grievances/${id}/evidence`, fd);
+    },
+    onSuccess: () => void qc.invalidateQueries({ queryKey: ['grievances', id] }),
+  });
+}
+
+/** Ask for a short-lived signed link to one file. Not a query: the link
+    expires in minutes, so caching it would hand back a dead URL. */
+export function useEvidenceLink(grievanceId: string | undefined) {
+  return useMutation({
+    mutationFn: (evidenceId: string) =>
+      api.get<{ url: string; expires_in: number; file_type: string }>(
+        `/api/grievances/${grievanceId}/evidence/${evidenceId}`),
   });
 }

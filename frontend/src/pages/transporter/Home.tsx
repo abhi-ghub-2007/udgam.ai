@@ -8,6 +8,7 @@ import {
 } from '@/components/ui';
 import { ShipmentTimeline } from '@/components/ShipmentTimeline';
 import { money, number, date } from '@/utils/format';
+import { ImpactPanel } from '@/components/ImpactPanel';
 
 export default function TransporterHome() {
   const { t } = useTranslation();
@@ -68,6 +69,10 @@ export default function TransporterHome() {
             </div>
           )}
       </section>
+      {/* Counted from platform records, labelled as such. Sits at the
+          end because it is context, not the reason anyone opened this
+          page. */}
+      <ImpactPanel />
     </div>
   );
 }

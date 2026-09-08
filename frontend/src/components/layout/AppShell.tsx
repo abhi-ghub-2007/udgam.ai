@@ -28,6 +28,7 @@ const I = {
   person: <path d="M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8Zm0 2c-4 0-8 2-8 5v1h16v-1c0-3-4-5-8-5Z" />,
   map: <path d="M9 3 3 5v16l6-2 6 2 6-2V3l-6 2Zm0 0v16m6-14v16" />,
   search: <path d="M10 4a6 6 0 1 1 0 12 6 6 0 0 1 0-12Zm0 2a4 4 0 1 0 0 8 4 4 0 0 0 0-8Zm5.7 8.3 4 4-1.4 1.4-4-4Z" />,
+  help: <path d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20Zm0 15.5a1.25 1.25 0 1 1 0-2.5 1.25 1.25 0 0 1 0 2.5Zm1.6-5.6c-.6.4-.85.65-.85 1.1v.5h-1.5v-.7c0-1 .5-1.6 1.3-2.15.65-.45.95-.7.95-1.25 0-.6-.5-1-1.25-1s-1.3.4-1.5 1.1l-1.4-.6C9.7 6.7 10.7 6 12.3 6c1.7 0 2.95.95 2.95 2.4 0 1.15-.6 1.8-1.65 2.5Z" />,
 };
 
 const icon = (d: JSX.Element) => (
@@ -94,7 +95,14 @@ export function AppShell() {
         <div className="mx-auto flex h-nav max-w-content items-center justify-between gap-3 px-4">
           <NavLink to={role ? `/${role}` : '/'} className="flex items-center gap-2 font-bold text-ink">
             <img src="/assets/logo.svg" alt="" width={28} height={28} aria-hidden />
-            <span className="text-h2">UDGAM<span className="text-primary">.ai</span></span>
+            {/* The wordmark stands down on narrow screens. With the language
+                selector and three icons alongside it, 375px was not wide
+                enough for all of them and the wordmark was being clipped
+                mid-word -- a cut-off brand name reads worse than the mark
+                alone. The logo is still there, and the mark is the brand. */}
+            <span className="hidden text-h2 sm:inline">
+              UDGAM<span className="text-primary">.ai</span>
+            </span>
           </NavLink>
 
           <div className="flex items-center gap-2">
@@ -107,6 +115,28 @@ export function AppShell() {
             >
               {LANGS.map((l) => <option key={l.code} value={l.code}>{l.label}</option>)}
             </select>
+
+            {/* Help and profile live in the header as well as the side rail.
+                The bottom nav caps at 5 and every role already fills it, so
+                without these two a phone user could not reach either screen at
+                all -- which for /profile also meant no way to add identity
+                documents. Icons carry aria-labels; nothing else about the
+                existing nav changed. */}
+            <NavLink
+              to="/help"
+              aria-label={t('grievance.title')}
+              className="grid h-tap w-tap place-items-center rounded-md text-ink-muted hover:bg-surface-low md:hidden"
+            >
+              {icon(I.help)}
+            </NavLink>
+
+            <NavLink
+              to="/profile"
+              aria-label={t('nav.profile')}
+              className="grid h-tap w-tap place-items-center rounded-md text-ink-muted hover:bg-surface-low md:hidden"
+            >
+              {icon(I.person)}
+            </NavLink>
 
             <NavLink
               to="/notifications"
@@ -134,6 +164,12 @@ export function AppShell() {
                 <span className="truncate">{t(it.labelKey)}</span>
               </NavLink>
             ))}
+            {/* Every role gets this, at the same place. A dispute is not a
+                farmer feature or a buyer feature. */}
+            <NavLink to="/help" className={linkCls}>
+              {icon(I.help)}
+              <span className="truncate">{t('grievance.title')}</span>
+            </NavLink>
             <NavLink to="/profile" className={linkCls}>
               {icon(I.person)}
               <span className="truncate">{t('nav.profile')}</span>

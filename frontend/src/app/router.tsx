@@ -24,6 +24,9 @@ const Signup = lazy(() => import('@/pages/auth/Signup'));
 const Welcome = lazy(() => import('@/pages/auth/Welcome'));
 const Profile = lazy(() => import('@/pages/Profile'));
 const Notifications = lazy(() => import('@/pages/Notifications'));
+const Grievances = lazy(() => import('@/pages/help/Grievances'));
+const GrievanceNew = lazy(() => import('@/pages/help/GrievanceNew'));
+const GrievanceDetail = lazy(() => import('@/pages/help/GrievanceDetail'));
 
 const FarmerHome = lazy(() => import('@/pages/farmer/Home'));
 const FarmerListings = lazy(() => import('@/pages/farmer/Listings'));
@@ -100,6 +103,14 @@ export const router = createBrowserRouter([
       { path: '/welcome', element: <Welcome /> },
       { path: '/profile', element: <Profile /> },
       { path: '/notifications', element: <Notifications /> },
+
+      // Help & grievances. Deliberately NOT role-guarded: all three roles use
+      // the same screens, and a case is scoped by participation (RLS), not by
+      // what kind of account is looking at it. `/help/new` is declared before
+      // `/help/:id` so it is not swallowed as a case id.
+      { path: '/help', element: <Grievances /> },
+      { path: '/help/new', element: <GrievanceNew /> },
+      { path: '/help/:id', element: <GrievanceDetail /> },
 
       { path: '/farmer', element: guarded('farmer', <FarmerHome />) },
       { path: '/farmer/listings', element: guarded('farmer', <FarmerListings />) },

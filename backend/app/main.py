@@ -15,8 +15,8 @@ from fastapi.staticfiles import StaticFiles
 from .config import settings
 from .errors import NotFound, register_error_handlers
 from .routers import (aggregations, auth, buyer_matching, dashboard, decisions, forecast,
-                      market, notifications, orders, products, profiles, reviews, transport,
-                      verification)
+                      grievances, market, notifications, orders, products, profiles, reviews,
+                      transport, verification)
 
 logging.basicConfig(
     level=logging.INFO,
@@ -54,6 +54,7 @@ app.include_router(decisions.router)
 app.include_router(aggregations.router)
 app.include_router(reviews.router)
 app.include_router(verification.router)
+app.include_router(grievances.router)
 
 
 @app.get("/", tags=["meta"])
