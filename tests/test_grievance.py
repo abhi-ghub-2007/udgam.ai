@@ -293,3 +293,23 @@ def test_a_message_can_only_be_written_in_your_own_name():
         encoding="utf-8")
     block = schema[schema.index("create policy grievance_messages_write"):][:500]
     assert "sender_id = auth.uid()" in block
+
+
+# --------------------------------------------------------------------------
+# abuse limits
+# --------------------------------------------------------------------------
+
+def test_abuse_ceilings_are_high_enough_for_a_genuinely_bad_week():
+    """A farmer with several orders that all went wrong must not be silenced
+    by the anti-abuse limit -- the ceiling exists for someone burying a
+    counterparty, not for someone having a bad week."""
+    assert gs.MAX_OPEN_CASES >= 10
+    assert gs.MAX_NEW_CASES_PER_WINDOW >= 3
+
+
+def test_only_live_cases_count_towards_the_open_ceiling():
+    """Settled cases must not accumulate into a lockout -- otherwise a user
+    who reports problems and resolves them ends up unable to report more."""
+    settled = [{"status": gs.RESOLVED}, {"status": gs.CLOSED}]
+    assert gs.summarise(settled)["open"] == 0
+    assert all(s not in gs.ACTIVE_STATUSES for s in (gs.RESOLVED, gs.CLOSED))

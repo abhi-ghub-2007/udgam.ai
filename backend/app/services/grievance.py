@@ -224,6 +224,18 @@ MIN_DESCRIPTION = 10
 MAX_DESCRIPTION = 2000
 MAX_MESSAGE = 2000
 
+# Abuse limits.
+#
+# A grievance costs the person it names something -- their time, and a case
+# sitting against their account. Somebody who can open them without limit can
+# bury a counterparty they dislike, so there are two ceilings: a burst limit,
+# and a cap on how many can be OPEN at once. Both are deliberately generous
+# enough that nobody with a real problem meets them: a farmer with five live
+# orders that all went wrong is still well inside.
+MAX_OPEN_CASES = 15
+MAX_NEW_CASES_PER_WINDOW = 5
+RATE_WINDOW_MINUTES = 15
+
 
 def validate_category(category: str, subcategory: str) -> str | None:
     """None when the pair is one we actually collect, else why not."""

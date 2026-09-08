@@ -35,7 +35,7 @@ from __future__ import annotations
 
 import logging
 import uuid
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 
 from fastapi import APIRouter, File, UploadFile
 from pydantic import BaseModel, Field
@@ -276,9 +276,30 @@ async def create_grievance(body: GrievanceCreateIn, user: CurrentUserDep):
     if problem:
         raise ValidationFailed(problem, field="description")
 
+    admin = admin_client()
+
+    # Abuse limits (rule: "what happens if a user abuses grievances?"). A case
+    # costs the person it names something, so neither ceiling is optional --
+    # but both are set well above what anybody with real problems would hit.
+    mine = (admin.table("grievances").select("status")
+            .eq("created_by", user.id).execute()).data or []
+    if sum(1 for c in mine if c["status"] in gs.ACTIVE_STATUSES) >= gs.MAX_OPEN_CASES:
+        raise ValidationFailed(
+            "You already have several cases open. Please settle or close some "
+            "of them before opening another.")
+
+    since = (datetime.now(timezone.utc)
+             - timedelta(minutes=gs.RATE_WINDOW_MINUTES)).isoformat()
+    recent = (admin.table("grievances").select("id", count="exact")
+              .eq("created_by", user.id).gte("created_at", since)
+              .limit(1).execute()).count or 0
+    if recent >= gs.MAX_NEW_CASES_PER_WINDOW:
+        raise ValidationFailed(
+            "You have opened several cases just now. Please wait a few minutes "
+            "before opening another.")
+
     ctx = _derive_context(user, body)
 
-    admin = admin_client()
     payload = {
         "created_by": user.id,
         "created_role": user.role,
