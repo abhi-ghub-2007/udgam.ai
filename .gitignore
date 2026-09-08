@@ -33,7 +33,11 @@ scratch/
 
 # ---- React frontend build output ----
 frontend/node_modules/
-frontend/dist/
+# frontend/dist IS committed. The backend serves it (FastAPI mounts it and
+# falls back to index.html), so one Render service hosts the whole product:
+# same origin for the API, and deep links work because the catch-all route
+# handles them rather than a static host 404ing on paths it has no file for.
+# Committing the build also means the deploy does not need Node at all.
 frontend/dev-dist/
 
 # ML data: raw mandi CSVs are large and not app source

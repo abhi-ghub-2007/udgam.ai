@@ -10,10 +10,23 @@
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 import type { AppConfig } from '@/types/api';
 
+/**
+ * Where the API lives.
+ *
+ * The backend serves this bundle itself (FastAPI mounts frontend/dist and
+ * falls back to index.html for unknown paths), so in every deployed setting
+ * the API is on the SAME ORIGIN as the page and the correct base is the empty
+ * string. That is why same-origin is the default rather than a hardcoded
+ * host: a build with no configuration deploys correctly anywhere.
+ *
+ * The localhost fallback stays for `npm run dev`, where Vite serves the page
+ * on :5173 while the API runs separately on :8001 -- the one case where the
+ * two genuinely are different origins.
+ */
 export const API_BASE: string =
-  (import.meta.env.VITE_API_BASE as string | undefined) ||
-  (window as unknown as { __UDGAM_API_BASE__?: string }).__UDGAM_API_BASE__ ||
-  'http://127.0.0.1:8001';
+  (import.meta.env.VITE_API_BASE as string | undefined) ??
+  (window as unknown as { __UDGAM_API_BASE__?: string }).__UDGAM_API_BASE__ ??
+  (import.meta.env.DEV ? 'http://127.0.0.1:8001' : '');
 
 let client: SupabaseClient | null = null;
 let config: AppConfig | null = null;
